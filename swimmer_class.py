@@ -2,7 +2,7 @@
 """Module for the Swimmer class and its methods."""
 
 import numpy as np
-from functions_general import panel_vectors, archive
+from functions_general import archive
 from swimmer_subclasses import Body, Edge, Wake
 
 class Swimmer(object):
@@ -20,10 +20,9 @@ class Swimmer(object):
             wake panels.
         SW_GEOMETRY: Switch for Body geometry type (currently VDV only).
         SW_KUTTA: Switch for Kutta condition (explicit or unsteady).
-        SW_WAKE: Switch for wake type (doublet sheets or vortex particles).
         V0: Free-stream velocity.
     """
-    def __init__(self, SwimmerParameters, GeoParameters, MotionParameters, COUNTER):
+    def __init__(self, SwimmerParameters, GeoParameters, MotionParameters, N_WAKE):
         """Inits Swimmer with all necessary parameters.
 
         This is also where Body, Edge, and Wake are created.
@@ -34,7 +33,6 @@ class Swimmer(object):
         self.DELTA_CORE = SwimmerParameters.DELTA_CORE
         self.SW_KUTTA = SwimmerParameters.SW_KUTTA
 
-#       TODO: Create new 3D Geometries and add them here
         if GeoParameters.SW_GEOMETRY == 'VDV':
             self.Body = Body.from_van_de_vooren(GeoParameters, MotionParameters)
 
@@ -45,7 +43,13 @@ class Swimmer(object):
             self.Body = Body.tear_drop(GeoParameters, MotionParameters)
 
         self.Edge = Edge(self.CE)
-        self.Wake = Wake(COUNTER)
+        self.Wake = Wake(N_WAKE)
+        
+#        self.Cf = np.zeros(N_WAKE+1)
+#        self.Cl = np.zeros(N_WAKE+1)
+#        self.Ct = np.zeros(N_WAKE+1)
+#        self.Cpow = np.zeros(N_WAKE+1)
+        
 
     def edge_shed(self, DEL_T, i):
         """Updates the position of the Edge panel.
@@ -63,13 +67,18 @@ class Swimmer(object):
         Body = self.Body
         Edge = self.Edge
 
-        tx = panel_vectors(Body.AF.x_neut, Body.AF.z_neut)[0][0]
-        tz = panel_vectors(Body.AF.x_neut, Body.AF.z_neut)[1][0]
-
         Edge.x[0] = Body.AF.x[0]
         Edge.z[0] = Body.AF.z[0]
-        Edge.x[1] = Edge.x[0] + Edge.CE*tx*Body.V0*DEL_T
-        Edge.z[1] = Edge.z[0] + Edge.CE*tz*Body.V0*DEL_T
+        
+        x_0 = 0.5 * (Body.AF.x[1] + Body.AF.x[-2])
+        z_0 = 0.5 * (Body.AF.z[1] + Body.AF.z[-2])
+        vect_x = Body.AF.x[0] - x_0
+        vect_z = Body.AF.z[0] - z_0
+        length = np.sqrt(vect_x**2 + vect_z**2)
+        tan_x = -vect_x / length
+        tan_z = -vect_z / length
+        Edge.x[1] = Body.AF.x[0] + Edge.CE*tan_x*Body.V0*DEL_T
+        Edge.z[1] = Body.AF.z[0] + Edge.CE*tan_z*Body.V0*DEL_T
 
     def wake_shed(self, DEL_T, i):
         """Updates the positions of the Wake panels.
@@ -87,18 +96,16 @@ class Swimmer(object):
         Wake = self.Wake
         V0 = self.V0
 
-        if i == 0:
-            pass
+        # Initialize wake coordinates when i==1
+        if i == 1:
 
-        elif i == 1:
-            # Initialize wake coordinates
             Wake.x[0] = Edge.x[-1]
             Wake.z[0] = Edge.z[-1]
 
             Wake.x[1:] = Wake.x[0] + np.arange(1,np.size(Wake.x))*(-V0)*DEL_T
             Wake.z[1:] = Wake.z[0]
 
-        elif i > 1:
+        else:
             archive(Wake.x)
             archive(Wake.z)
             archive(Wake.mu)

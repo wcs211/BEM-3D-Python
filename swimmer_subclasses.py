@@ -18,11 +18,11 @@ class Edge(object):
     def __init__(self, CE):
         """Inits Edge with all necessary parameters."""
         self.N = 1
-        self.mu = np.zeros(self.N)
-        self.gamma = np.zeros(self.N+1)
         self.CE = CE
         self.x = np.zeros(self.N+1)
         self.z = np.zeros(self.N+1)
+        self.mu = np.zeros(self.N)
+        self.gamma = np.zeros(self.N+1)
 
 class Wake(object):
     """A chain of wake doublet panels.
@@ -33,13 +33,13 @@ class Wake(object):
         mu: Doublet strengths of the wake panels.
         gamma: Circulations at the wake panel endpoints.
     """
-    def __init__(self, COUNTER):
+    def __init__(self, N):
         """Inits Wake with all necessary parameters."""
-        self.N = COUNTER-1
-        self.x = np.zeros(self.N+1)
-        self.z = np.zeros(self.N+1)
-        self.mu = np.zeros(self.N)
-        self.gamma = np.zeros(self.N+1)
+        self.N = N
+        self.x = np.zeros(N+1)
+        self.z = np.zeros(N+1)
+        self.mu = np.zeros(N)
+        self.gamma = np.zeros(N+1)
 
 class Body(object):
     """An arrangement of source/doublet panels in the shape of a swimming body.
@@ -90,8 +90,12 @@ class Body(object):
         self.p = np.zeros(N)
         self.cp = np.zeros(N)
         self.mu_past = np.zeros((2,N))
+        
+        self.Cf = 0.
+        self.Cl = 0.
+        self.Ct = 0.
+        self.Cpow = 0.
 
-#   TODO: Add 3D Geometry creation here for different profile shapes
     @classmethod
     def from_van_de_vooren(cls, GeoVDVParameters, MotionParameters):
         """Creates a Body object based on a Van de Vooren airfoil geometry.
@@ -160,16 +164,12 @@ class Body(object):
         step  = (N+2)/2
         theta = np.linspace(start,stop,step)
         xb = (C*np.cos(theta).T + C)/(2.)
-#        print xb
 
         start = np.pi
         stop  = 0
         step  = (N+2)/2
         theta = np.linspace(start,stop,step)
         xt = (C*np.cos(theta).T + C)/(2.)
-#        print xt
-#        xb = np.linspace(c,0,(N+2)/2).T
-#        xt = np.linspace(0,c,(N+2)/2).T
         zb = -0.5*D*np.ones((N+2)/2)
         zt =  0.5*D*np.ones((N+2)/2)
 
@@ -274,8 +274,7 @@ class Body(object):
 
         return Body(N, S, BodyFrameCoordinates, MotionParameters)
 
-# TODO: Change neutral_axis to neutral_plane
-    def neutral_axis(self, x, T, DSTEP=0, TSTEP=0):
+    def neutral_axis(self, x, T, THETA, HEAVE, DSTEP=0):
         """Finds a body's neutral axis for a given time.
 
         The neutral axis is the axis which coincides with the chord line and
@@ -285,51 +284,41 @@ class Body(object):
 
         Args:
             x: An array of body-frame x-coordinates to use as reference points.
-            DSTEP, TSTEP: Small incremental distance/time offsets
-                (intended for differencing).
+            DSTEP: Small incremental distance offset (intended for differencing).
             T: Time of the current step.
-            X0, Z0: Initial position of the leading edge (absolute frame).
-            THETA_MAX: Maximum pitching angle of the body.
-            F: Frequency of the body's pitching motion.
-            PHI: Phase offset of the body's pitching motion.
-            V0: Free-stream velocity.
+            THETA: Current pitching angle.
 
         Returns:
             x_neut and z_neut: X- and Z-coordinates of the neutral axis points.
         """
         X0 = self.MP.X0
         Z0 = self.MP.Z0
-        THETA_MAX = self.MP.THETA_MAX
-        F = self.MP.F
-        PHI = self.MP.PHI
         V0 = self.MP.V0
 
-        x_neut = X0 + (x+DSTEP)*np.cos(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI)) + V0*T
-        z_neut = Z0 + (x+DSTEP)*np.sin(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI))
+        x_neut = X0 + (x+DSTEP)*np.cos(THETA) + V0*T
+        z_neut = Z0 + (x+DSTEP)*np.sin(THETA) + HEAVE
 
         return(x_neut, z_neut)
 
-#   TODO: Update panel_positions to account for 3D objects
-    def panel_positions(self, DSTEP, T):
+    def panel_positions(self, DSTEP, T, THETA, HEAVE):
         """Updates all the absolute-frame coordinates of the body.
 
         Args:
             DSTEP: Small incremental distance to pass into neutral_axis().
             T: Time of current step.
-            bfx, bfz: Body-frame x- and z-coordinates.
-            bfz_col: Body-frame collocation z-coordinates (unshifted)
-            V0: Free-stream velocity.
+            THETA: Current pitching angle.
+
         """
         bfx = self.BF.x
         bfz = self.BF.z
         bfz_col = self.BF.z_col
         V0 = self.V0 # Used only for x_le
 
-        (x_neut, z_neut) = self.neutral_axis(bfx, T)
+        (x_neut, z_neut) = self.neutral_axis(bfx, T, THETA, HEAVE)
 
         # Infinitesimal differences on the neutral axis to calculate the tangential and normal vectors
-        (xdp_s, zdp_s) = self.neutral_axis(bfx, T, DSTEP)
-        (xdm_s, zdm_s) = self.neutral_axis(bfx, T, -DSTEP)
+        (xdp_s, zdp_s) = self.neutral_axis(bfx, T, THETA, HEAVE, DSTEP)
+        (xdm_s, zdm_s) = self.neutral_axis(bfx, T, THETA, HEAVE, -DSTEP)
 
         # Absolute-frame panel endpoint positions for time t
         afx = x_neut + point_vectors(xdp_s, xdm_s, zdp_s, zdm_s)[2]*bfz
@@ -354,19 +343,40 @@ class Body(object):
         self.AF.z_mid[0,:] = z_mid
         self.AF.x_neut = x_neut
         self.AF.z_neut = z_neut
-        # Location of leading edge (assuming pitching motion only)
+        # Location of leading edge (currently pitching motion only)
         self.AF.x_le = V0*T
-        self.AF.z_le = 0.
+        self.AF.z_le = HEAVE
+        
+    def fsi_panel_positions(self, FSI, T, THETA, HEAVE):
+        self.AF.x = self.AF.x + (FSI.fluidNodeDispl[:,0] - FSI.fluidNodeDisplOld[:,0])
+        self.AF.z = self.AF.z + (FSI.fluidNodeDispl[:,1] - FSI.fluidNodeDisplOld[:,1])                 
 
-    def surface_kinematics(self, DSTEP, TSTEP, DEL_T, T, i):
+        self.AF.x_mid[0,:] = (self.AF.x[:-1] + self.AF.x[1:])/2
+        self.AF.z_mid[0,:] = (self.AF.z[:-1] + self.AF.z[1:])/2
+
+        self.BF.x = (self.AF.x - self.AF.x_le) * np.cos(-1*THETA) - (self.AF.z - self.AF.z_le) * np.sin(-1*THETA)
+        self.BF.z = (self.AF.z - self.AF.z_le) * np.cos(-1*THETA) + (self.AF.x - self.AF.x_le) * np.sin(-1*THETA)
+        self.BF.x_col = ((self.BF.x[1:] + self.BF.x[:-1])/2)
+        self.BF.z_col = ((self.BF.z[1:] + self.BF.z[:-1])/2)
+
+        (self.AF.x_neut, self.AF.z_neut) = self.neutral_axis(self.BF.x, T, THETA, HEAVE)
+
+        self.AF.x_col = self.AF.x_mid[0,:] - self.S*panel_vectors(self.AF.x, self.AF.z)[2]*np.absolute(self.BF.z_col)
+        self.AF.z_col = self.AF.z_mid[0,:] - self.S*panel_vectors(self.AF.x, self.AF.z)[3]*np.absolute(self.BF.z_col)
+
+    def surface_kinematics(self, DSTEP, TSTEP, THETA_MINUS, THETA_PLUS, HEAVE_MINUS, HEAVE_PLUS, DEL_T, T, i):
         """Calculates the body-frame surface velocities of body panels.
+
+        Also finds the body panel source strengths based on these surface
+        velocities.
 
         Args:
             DSTEP, TSTEP: Incremental distance/time passed into neutral_axis().
             DEL_T: Time step length.
             T: Time of current step.
             i: Time step number.
-            x_col, z_col: Unshifted body-frame collocation point coordinates.
+            THETA_MINUS: Pitching angle minus a small time difference (TSTEP)
+            THETA_PLUS: Pitching angle plus a small time difference (TSTEP)
         """
         if i == 0:
 
@@ -375,12 +385,12 @@ class Body(object):
 
             # Panel midpoint velocity calculations
             # Calculating the surface positions at tplus(tp) and tminus(tm)
-            (xtpneut, ztpneut) = self.neutral_axis(x_col, T, 0, TSTEP)
-            (xtpdp, ztpdp) = self.neutral_axis(x_col, T, DSTEP, TSTEP)
-            (xtpdm, ztpdm) = self.neutral_axis(x_col, T, -DSTEP, TSTEP)
-            (xtmneut, ztmneut) = self.neutral_axis(x_col, T, 0, -TSTEP)
-            (xtmdp, ztmdp) = self.neutral_axis(x_col, T, DSTEP, -TSTEP)
-            (xtmdm, ztmdm) = self.neutral_axis(x_col, T, -DSTEP, -TSTEP)
+            (xtpneut, ztpneut) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, 0)
+            (xtpdp, ztpdp) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, DSTEP)
+            (xtpdm, ztpdm) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, -DSTEP)
+            (xtmneut, ztmneut) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, 0)
+            (xtmdp, ztmdp) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, DSTEP)
+            (xtmdm, ztmdm) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, -DSTEP)
 
             # Displaced airfoil's panel midpoints for times tplus(tp) and tminus(tm)
             xctp = xtpneut + point_vectors(xtpdp, xtpdm, ztpdp, ztpdm)[2]*z_col
@@ -403,6 +413,7 @@ class Body(object):
             self.vx = (3*self.AF.x_mid[0,:]-4*self.AF.x_mid[1,:]+self.AF.x_mid[2,:])/(2*DEL_T) - self.V0
             self.vz = (3*self.AF.z_mid[0,:]-4*self.AF.z_mid[1,:]+self.AF.z_mid[2,:])/(2*DEL_T)
 
+        # Body source strengths with normal vector pointing outward (overall sigma pointing outward)
         (nx,nz) = panel_vectors(self.AF.x,self.AF.z)[2:4]
         self.sigma = nx*(self.V0 + self.vx) + nz*self.vz
 
@@ -414,6 +425,7 @@ class Body(object):
             DEL_T: Time step length.
             i: Time step number.
         """
+
         (tx,tz,nx,nz,lpanel) = panel_vectors(self.AF.x,self.AF.z)
 
         # Tangential panel velocity dmu/dl, first-order differencing
@@ -423,6 +435,8 @@ class Body(object):
         dmu_dl[-1] = (self.mu[-2]-self.mu[-1]) / (lpanel[-2]/2 + lpanel[-1]/2)
 
         # Potential change dmu/dt, second-order differencing after first time step
+        if i == 0:
+            dmu_dt = self.mu / DEL_T
         if i == 1:
             dmu_dt = (self.mu - self.mu_past[0,:])/DEL_T
         else:
@@ -435,15 +449,32 @@ class Body(object):
         self.p = -RHO*(qpx_tot**2 + qpz_tot**2)/2. + RHO*dmu_dt + RHO*(qpx_tot*(self.V0+self.vx) + qpz_tot*self.vz)
         self.cp = self.p / (0.5*RHO*self.V0**2)
 
-#    def force(self, i):
-#        """Calculates drag and lift forces acting on the body.
-#
-#        Args:
-#            i: Time step number.
-#        """
-#        (tx,tz,nx,nz,lpanel) = panel_vectors(self.AF.x, self.AF.z)
-#
-#        self.drag[i-1] = np.dot(self.p[i-1,:]*lpanel, np.reshape(tx,(self.N,1)))\
+    def force(self, THETA, RHO, V0, C, B, i):
+        """Calculates drag and lift forces acting on the body.
+
+        Args:
+            i: Time step number.
+        """
+        
+        (tx,tz,nx,nz,lpanel) = panel_vectors(self.AF.x, self.AF.z)
+
+        delFx = -self.p * lpanel * B * nx
+        delFz = -self.p * lpanel * B * nz
+        delF = np.array([delFx, delFz])
+#        delF = -np.multiply(np.kron(self.p, np.array([1, 1])), np.array([nx, nz]).T)
+        delP = np.sum(-delF * np.array([self.vx.T, self.vz.T]), 1)
+
+        force = np.sum(delF,1)
+        lift = force[1] * np.cos(THETA) - force[0] * np.sin(THETA)
+        thrust = -(force[1] * np.sin(THETA) + force[0] * np.cos(THETA))
+        power = np.sum(delP, 0)
+        
+        self.Cf = np.sqrt(force[0]**2 + force[1]**2) / (0.5 * RHO * V0**2 * C *B)
+        self.Cl = lift /(0.5 * RHO * V0**2 * C *B)
+        self.Ct = thrust / (0.5 * RHO * V0**2 * C *B)
+        self.Cpow = power /  (0.5 * RHO * V0**3 * C *B)
+        
+#        Body.drag[i-1] = np.dot(self.p[i-1,:]*lpanel, np.reshape(tx,(self.N,1)))\
 #                      + np.dot(self.p[i-1,:]*lpanel, np.reshape(-tz,(self.N,1)))
 #
 #        self.lift[i-1] = np.dot(self.p[i-1,:]*lpanel, np.reshape(-nz,(self.N,1)))\
