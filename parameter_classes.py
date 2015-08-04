@@ -78,8 +78,9 @@ class MotionParameters(object):
         F: Frequency of the body's pitching motion.
         PHI: Phase offset of the body's pitching motion.
     """
-    def __init__(self, X0, Z0, V0, THETA_MAX, F, PHI):
+    def __init__(self, X0, Y0, Z0, V0, THETA_MAX, F, PHI):
         self.X0 = X0
+        self.Y0 = Y0
         self.Z0 = Z0
         self.V0 = V0
         self.THETA_MAX = THETA_MAX

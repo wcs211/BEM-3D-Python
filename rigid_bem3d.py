@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-BEM-2D
-A 2D boundary element method code
+BEM-3D
+A 3D boundary element method code
 
 """
 import time

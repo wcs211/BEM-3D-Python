@@ -274,11 +274,11 @@ class Body(object):
 
         return Body(N, S, BodyFrameCoordinates, MotionParameters)
 
-    def neutral_axis(self, x, T, THETA, HEAVE, DSTEP=0):
+    def neutral_axis(self, x, T, THETA_X, THETA_Y, THETA_Z, HEAVE, DSTEP=0):
         """Finds a body's neutral axis for a given time.
 
         The neutral axis is the axis which coincides with the chord line and
-        divides the symmetric airfoil into two. CURRENTLY PITCHING MOTION ONLY.
+        divides the symmetric airfoil into two.
 
         The axis that it finds is in an absolute frame of reference.
 
@@ -292,13 +292,25 @@ class Body(object):
             x_neut and z_neut: X- and Z-coordinates of the neutral axis points.
         """
         X0 = self.MP.X0
+        Y0 = self.MP.Y0
         Z0 = self.MP.Z0
         V0 = self.MP.V0
+        
+        rx = np.array([[1, 0, 0], [0, np.cos(THETA_X), -np.sin(THETA_X)], [0, np.sin(THETA_X), np.cos(THETA_X)]])
+        ry = np.array([[np.cos(THETA_Y), 0, np.sin(THETA_Y)], [0, 1, 0], [-np.sin(THETA_Y), 0, np.cos(THETA_Y)]])
+        rz = np.array([[np.cos(THETA_Z), -np.sin(THETA_Z), 0], [np.sin(THETA_Z), np.cos(THETA_Z), 0], [0, 0, 1]])
+        r  = rx * ry * rz
 
-        x_neut = X0 + (x+DSTEP)*np.cos(THETA) + V0*T
-        z_neut = Z0 + (x+DSTEP)*np.sin(THETA) + HEAVE
-
-        return(x_neut, z_neut)
+        x_neut = X0 + r * 
+        y_neut = Y0 + (x + DSTEP) * np.cos(THETA_Y) \
+                    + (y + DSTEP) * np.cos(THETA_X) \
+                    + (z + DSTEP) * np.cos(THETA_Z) \
+                    + HEAVE_Y
+        z_neut = Z0 + (x + DSTEP) * np.cos(THETA_Y) \
+                    + (y + DSTEP) * np.cos(THETA_X) \
+                    + (z + DSTEP) * np.cos(THETA_Z) \
+                    + HEAVE_Z
+        return(x_neut, y_neut, z_neut)
 
     def panel_positions(self, DSTEP, T, THETA, HEAVE):
         """Updates all the absolute-frame coordinates of the body.
