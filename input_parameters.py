@@ -17,7 +17,7 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Geometry Definition                                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-, 'SW_GEOMETRY':        'FP'
+, 'SW_GEOMETRY':        'VDV'
 , 'N_CHORD':            61                  # Number of chordwise panels.
 , 'N_SPAN':             61                  # Number of spanwise panels.
 , 'C':                  1.0                 # Chord  length of rectangular body.
@@ -25,7 +25,7 @@ P = PARAMETERS = {
 , 'C_B':                2.0                 # Body chord length.
 , 'K':                  2.-(12.4/180)       # Van de Vooren airfoil parameter.
 , 'EPSILON':            0.075               # Van de Vooren airfoil parameter.
-, 'T_MAX':              0.002               # Maximum thickness.
+, 'T_MAX':              0.2                 # Maximum thickness.
 , 'S':                  0.1                 # Collocation point shifting coefficient.
 , 'AR_b':               3.5                 # Ellipsoidal body aspect ratio.
 , 'S_wp':               10                  # Wetted area of the body+propulsor compared to planform area of the propulsor.

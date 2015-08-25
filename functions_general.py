@@ -1,8 +1,7 @@
 import os
 import sys
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy import arange, array, exp
+
 #from swimmer_class import Swimmer
 
     # x,z components of each panel's tangential and normal vectors
@@ -127,9 +126,9 @@ def geom_setup(P, PC, Swimmer, solid=None, FSI=None, PyFEA=None):
 #            N_CHORD, N_SPAN, S, C, SPAN, D
             GeoP[i] = PC.GeoFPParameters(P['N_CHORD'], P['N_SPAN'], P['S'], P['C'], P['SPAN'], P['T_MAX'])
         elif (P['SW_GEOMETRY'] == 'TD'):
-            GeoP[i] = PC.GeoTDParameters(P['N_BODY'], P['S'], P['C'], P['T_MAX'])
+            GeoP[i] = PC.GeoTDParameters(P['N_CHORD'], P['N_SPAN'], P['S'], P['C'], P['SPAN'], P['T_MAX'])
         elif (P['SW_GEOMETRY'] == 'VDV'):
-            GeoP[i] = PC.GeoVDVParameters(P['N_BODY'], P['S'], P['C'], P['K'], P['EPSILON'])
+            GeoP[i] = PC.GeoVDVParameters(P['N_CHORD'], P['N_SPAN'], P['S'], P['C'], P['SPAN'], P['K'], P['EPSILON'])
         else:
             print 'ERROR! Invalid geometry type.'
 #        X0, Y0, Z0, V0, THETA_MAX, HEAVE_MAX, F, PHI

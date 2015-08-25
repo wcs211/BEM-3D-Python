@@ -1,20 +1,33 @@
 import os
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-import time
 
 # Global figure variable
 # This is to make sure each plot is drawn in a new window, no matter which plotting methods are used
 n_fig = 1
 
-def basic_xy(x,y,color='b'):
+def basic_xyz(x,y,z,color='b'):
     
     global n_fig
-    figure = plt.figure(n_fig)
-    figure.add_subplot(1, 1, 1, axisbg='1') # Change background color here
-    plt.gca().set_aspect('equal')  
-    plt.plot(x,y,color)
+    fig = plt.figure(n_fig)
+    ax = fig.gca(projection='3d')
+    ax.set_aspect('equal')
+    surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap='hot', linewidth=0, antialiased=False)
+    ax.set_xlim(-1.2, 1.2)
+    ax.set_ylim(-1.2, 1.2)
+    ax.set_zlim(-1.2, 1.2)
     plt.show()
+    
+    
+    
+    
+#    figure = plt.figure(n_fig)
+#    Axes3D.
+#    ax = figure.add_subplot(1, 1, 1, projection='3d')
+#    plt.gca().set_aspect('equal')  
+#    Axes3D.plot_surface(x, y, z, color='b')
+#    plt.show()
     
 #    time.sleep(5)
     n_fig += 1

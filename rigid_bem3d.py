@@ -13,6 +13,7 @@ from swimmer_class import Swimmer
 import parameter_classes as PC
 from terminal_output import print_output as po
 from functions_general import simulation_startup
+import functions_graphics as graph
 
 po().prog_title('1.0.082515a')
 DIO = DataIO(P)
@@ -30,3 +31,6 @@ RE = P['RE']
 po().calc_input(MotP[0].THETA_MAX/np.pi*180.,RE,MotP[0].THETA_MAX/np.pi*180.,DEL_T)
 po().initialize_output(P['T'][START_COUNTER])
 
+
+
+graph.basic_xyz(Swimmers[0].Body.BF.x,Swimmers[0].Body.BF.y,Swimmers[0].Body.BF.z)
