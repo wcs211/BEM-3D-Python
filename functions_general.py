@@ -124,15 +124,16 @@ def geom_setup(P, PC, Swimmer, solid=None, FSI=None, PyFEA=None):
     for i in xrange(P['N_SWIMMERS']):
         SwiP[i] = PC.SwimmerParameters(P['CE'], P['DELTA_CORE'], P['SW_KUTTA'])
         if (P['SW_GEOMETRY'] == 'FP'):
-            GeoP[i] = PC.GeoFPParameters(P['N_BODY'], P['S'], P['C'], P['T_MAX'])
+#            N_CHORD, N_SPAN, S, C, SPAN, D
+            GeoP[i] = PC.GeoFPParameters(P['N_CHORD'], P['N_SPAN'], P['S'], P['C'], P['SPAN'], P['T_MAX'])
         elif (P['SW_GEOMETRY'] == 'TD'):
             GeoP[i] = PC.GeoTDParameters(P['N_BODY'], P['S'], P['C'], P['T_MAX'])
         elif (P['SW_GEOMETRY'] == 'VDV'):
             GeoP[i] = PC.GeoVDVParameters(P['N_BODY'], P['S'], P['C'], P['K'], P['EPSILON'])
         else:
             print 'ERROR! Invalid geometry type.'
-
-        MotP[i] = PC.MotionParameters(P['X_START'][i], P['Z_START'][i], P['V0'], P['THETA_MAX'], P['F'], P['PHI'])
+#        X0, Y0, Z0, V0, THETA_MAX, HEAVE_MAX, F, PHI
+        MotP[i] = PC.MotionParameters(P['X_START'][i], P['Y_START'][i], P['Z_START'][i], P['V0'], P['THETA_MAX'], P['HEAVE_MAX'], P['F'], P['PHI'])
 
         Swimmers[i] = Swimmer(SwiP[i], GeoP[i], MotP[i], P['COUNTER']-1)
 

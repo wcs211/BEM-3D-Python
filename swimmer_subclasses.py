@@ -62,9 +62,12 @@ class Body(object):
         cp: Surface pressure coefficients of the body panels.
         mu_past: mu arrays from previous time steps for backwards differencing.
     """
-    def __init__(self, N, S, BodyFrameCoordinates, MotionParameters):
+#    N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters
+    def __init__(self, N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters):
         """Inits Body with all necessary parameters."""
-        self.N = N
+        self.N_CHORD = N_CHORD
+        self.N_SPAN = N_SPAN
+        self.N = 4. * N_CHORD * N_SPAN
         self.S = S
 
         # Body-frame panel coordinates:
@@ -72,24 +75,24 @@ class Body(object):
         self.BF = BodyFrameCoordinates
         # Initialize absolute-frame panel coordinates:
         # x, z, x_col, z_col, x_mid, z_mid, x_neut, z_neut
-        self.AF = PC.BodyAFC(N)
+        self.AF = PC.BodyAFC(self.N)
         # Prescribed motion
         self.MP = MotionParameters
         self.V0 = MotionParameters.V0
 
-        self.vx = np.zeros(N)
-        self.vz = np.zeros(N)
+        self.vx = np.zeros(self.N)
+        self.vz = np.zeros(self.N)
 
-        self.sigma = np.zeros(N)
-        self.phi_s = np.zeros((N,N))
-        self.phi_db = np.zeros((N,N))
-        self.phi_dw = np.zeros(N)
-        self.mu = np.zeros(N)
-        self.gamma = np.zeros(N+1)
+        self.sigma = np.zeros(self.N)
+        self.phi_s = np.zeros((self.N,self.N))
+        self.phi_db = np.zeros((self.N,self.N))
+        self.phi_dw = np.zeros(self.N)
+        self.mu = np.zeros(self.N)
+        self.gamma = np.zeros(self.N+1)
 
-        self.p = np.zeros(N)
-        self.cp = np.zeros(N)
-        self.mu_past = np.zeros((2,N))
+        self.p = np.zeros(self.N)
+        self.cp = np.zeros(self.N)
+        self.mu_past = np.zeros((2,self.N))
         
         self.Cf = 0.
         self.Cl = 0.
@@ -286,7 +289,7 @@ class Body(object):
             y_mid[:,i] = 0.25 * (y[1:,i] + y[:-1,i] + y[1:,i+1] + y[:-1,i+1])
             z_mid[:,i] = 0.25 * (z[1:,i] + z[:-1,i] + z[1:,i+1] + z[:-1,i+1])   
 
-        BodyFrameCoordinates = PC.BodyBFC(xb, zb, x_mid, y_mid, z_mid)
+        BodyFrameCoordinates = PC.BodyBFC(x, y, z, x_mid, y_mid, z_mid)
 
         return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 

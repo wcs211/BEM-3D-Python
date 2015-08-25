@@ -28,5 +28,5 @@ RE = P['RE']
 (START_COUNTER, COUNTER, SwiP, GeoP, MotP, Swimmers) = simulation_startup(P, DIO, PC, Swimmer)[0:6]
 
 po().calc_input(MotP[0].THETA_MAX/np.pi*180.,RE,MotP[0].THETA_MAX/np.pi*180.,DEL_T)
-po().initialize_output((START_COUNTER-1)*DEL_T)
+po().initialize_output(P['T'][START_COUNTER])
 

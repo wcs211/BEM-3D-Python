@@ -83,7 +83,7 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # FSI Coupling Constants                                                      #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-, 'SW_FSI':             True
+, 'SW_FSI':             False
 , 'N_OUTERCORR_MAX':    1500
 , 'OUTER_CORR_TOL':     1e-7
 , 'FIXED_PT_RELAX':     1e-8
@@ -105,6 +105,7 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 P['N_SWIMMERS']  = 1
 P['X_START']     = [i * 0.0 for i in xrange(P['N_SWIMMERS'])]
+P['Y_START']     = [i * 0.0 for i in xrange(P['N_SWIMMERS'])]
 P['Z_START']     = [i * 0.4 for i in xrange(P['N_SWIMMERS'])]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -114,7 +115,7 @@ P['DEL_T']   = 1. / P['F'] / P['N_STEP']
 P['COUNTER'] = P['N_CYC'] * P['N_STEP'] + 1
 
 # Constants dependent on declared parameters
-P['N'] = 4*P['N_CHORD']*P['N_SPAN']                 # Total number of body panels.
+P['N_BODY'] = 4*P['N_CHORD']*P['N_SPAN']            # Total number of body panels.
 P['RE'] = -P['V0']*P['C']/P['NU']                   # Reynolds number based on the body chord length.
 P['U0'] = -P['V0']*np.cos(P['ALPHA_MAX'])           # U component of free-stream velocity.
 P['W0'] = P['V0']*np.sin(P['ALPHA_MAX'])            # W component of free-stream velocity.
