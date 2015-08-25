@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Tue Aug  4 09:51:20 2015
 
+@author: biofluids4
+"""
 import numpy as np
 
 class SwimmerParameters(object):
@@ -11,30 +15,31 @@ class SwimmerParameters(object):
             wake panels.
         SW_KUTTA: Switch for Kutta condition (explicit or unsteady).
     """
-    def __init__(self, CE, DELTA_CORE, SW_KUTTA):
+    def __init__(self, CE, DELTA_CORE,DELTA_CORE_F,SW_KUTTA):
         self.CE = CE
         self.DELTA_CORE = DELTA_CORE
+        self.DELTA_CORE_F = DELTA_CORE_F
         self.SW_KUTTA = SW_KUTTA
-
+        
 class GeoVDVParameters(object):
     """A collection of parameters related to a body geometry.
     
     Attributes:
         SW_GEOMETRY: String describing the geometry type (used as a switch).
-        N_SPAN: Number of spanwise body panels.
-        N_CHORD: Number of chordwise body panels.
-        S: Collocation point shifting coefficient.
-        C: Body chord length.
-        SPAN: Span length of body.
-        K, EPSILON: Van de Vooren airfoil parameters.
+        N_CHORD:     Number of chordwise panels.
+        N_SPAN:      Number of spanwise panels.
+        SPAN:        Half span of the rectangular body.
+        C:           Chord length of the rectangular body.
+        S:           Collocation point shifting coefficient.
+        K, EPSILON:  Van de Vooren airfoil parameters.
     """
-    def __init__(self, N_CHORD, N_SPAN, S, C, SPAN, K, EPSILON):
+    def __init__(self,N_CHORD,N_SPAN,C,SPAN,S,K,EPSILON):
         self.SW_GEOMETRY = 'VDV'
         self.N_CHORD = N_CHORD
         self.N_SPAN = N_SPAN
-        self.S = S
         self.C = C
         self.SPAN = SPAN
+        self.S = S
         self.K = K
         self.EPSILON = EPSILON
         
@@ -43,20 +48,21 @@ class GeoFPParameters(object):
     
     Attributes:
         SW_GEOMETRY: String describing the geometry type (used as a switch).
-        N_SPAN: Number of spanwise body panels.
-        N_CHORD: Number of chordwise body panels.
-        S: Collocation point shifting coefficient.
-        C: Body chord length.
-        SPAN: Span length of body.
+        N_CHORD:     Number of chordwise panels.
+        N_SPAN:      Number of spanwise panels.
+        SPAN:        Half span of the rectangular body.
+        C:           Chord length of the rectangular body.
+        S:           Collocation point shifting coefficient.
+        K, EPSILON:  Van de Vooren airfoil parameters.
         D: Diameter of leading and trailing edge circles.
     """
-    def __init__(self, N_CHORD, N_SPAN, S, C, SPAN, D):
+    def __init__(self,N_CHORD,N_SPAN,C,SPAN,S,D):
         self.SW_GEOMETRY = 'FP'
         self.N_CHORD = N_CHORD
         self.N_SPAN = N_SPAN
-        self.S = S
         self.C = C
         self.SPAN = SPAN
+        self.S = S
         self.D = D
         
 class GeoTDParameters(object):
@@ -64,89 +70,76 @@ class GeoTDParameters(object):
     
     Attributes:
         SW_GEOMETRY: String describing the geometry type (used as a switch).
-        N_SPAN: Number of spanwise body panels.
-        N_CHORD: Number of chordwise body panels.
-        S: Collocation point shifting coefficient.
-        C: Body chord length.
-        SPAN: Span length of body.
+        N_CHORD:     Number of chordwise panels.
+        N_SPAN:      Number of spanwise panels.
+        SPAN:        Half span of the rectangular body.
+        C:           Chord length of the rectangular body.
+        S:           Collocation point shifting coefficient.
+        K, EPSILON:  Van de Vooren airfoil parameters.
         D: Diameter of leading and trailing edge circles.
     """
-    def __init__(self, N_CHORD, N_SPAN, S, C, SPAN, D):
+    def __init__(self,N_CHORD,N_SPAN,C,SPAN,S,D):
         self.SW_GEOMETRY = 'TD'
         self.N_CHORD = N_CHORD
         self.N_SPAN = N_SPAN
-        self.S = S
         self.C = C
         self.SPAN = SPAN
+        self.S = S
         self.D = D
-
-#==============================================================================
-# # Re_organize according to Emre's code.
-#==============================================================================
+    
 class MotionParameters(object):
     """A collection of parameters related to a swimmer's path of motion.
-    
+   ###################################################################################
     Attributes:
-        X0, Y0, Z0: Initial position of the leading edge (absolute frame).
-        V0: Free-stream velocity.
+    
         THETA_MAX: Maximum pitching angle of the body.
         HEAVE_MAX: Maximum heaving amplitude.
-        F: Frequency of the body's pitching motion.
-        PHI: Phase offset of the body's pitching motion.
+        T: Time.
+        F: Frequency of the body's pitching motion,Hz.
+        PHI: Phase of flapping time signal.
     """
-    def __init__(self, X0, Y0, Z0, V0, THETA_MAX, HEAVE_MAX, F, PHI):
+    def __init__(self,X0,Y0,Z0,V0,HEAVE_MAX,THETA_MAX,F,PHI):
         self.X0 = X0
         self.Y0 = Y0
         self.Z0 = Z0
         self.V0 = V0
-        self.THETA_MAX = THETA_MAX
         self.HEAVE_MAX = HEAVE_MAX
-        self.F = F
+        
+        self.THETA_MAX = THETA_MAX
+        self.F = F 
         self.PHI = PHI
     
 class BodyBFC(object):
     """A collection of body-frame coordinates for a Body object.
     
     Attributes:
-        x, y, z: Body-frame panel endpoint positions.
-        x_mid, y_mid, z_mid: Body-frame panel midpoint positions (unshifted).
+        x, z: Body-frame panel endpoint positions.
+        x_col, z_col: Body-frame panel midpoint positions (unshifted).
     """
-    def __init__(self, x, y, z, x_mid, y_mid, z_mid):
+    def __init__(self, x, z, x_col, z_col):
         self.x = x
-        self.y = y
         self.z = z
-        self.x_mid = x_mid
-        self.y_mid = y_mid
-        self.z_mid = z_mid
-        
-#==============================================================================
-# # Make sure about that part.
-#==============================================================================
+        self.x_col = x_col
+        self.z_col = z_col
+    
 class BodyAFC(object):
     """A collection of absolute-frame coordinates for a Body object.
     
     Attributes:
-        N: Total number of body panels.
-        x, y, z: Panel endpoint positions.
-        x_col, y_col, z_col: Panel collocation point positions (shifted midpoints).
-        x_mid, y_mid, z_mid: Panel midpoint positions.
-        x_neut, y_neut, z_neut: Point arrays along the body's neutral axis.
-        x_le, y_le, z_le: Position of the body's leading edge point.
+        x, z: Panel endpoint positions.
+        x_col, z_col: Panel collocation point positions (shifted midpoints).
+        x_mid, z_mid: Panel midpoint positions.
+        x_neut, z_neut: Point arrays along the body's neutral axis.
+        x_le, z_le: Position of the body's leading edge point.
     """
     def __init__(self, N):
-        self.N = N
         self.x = np.empty(N+1)
-        self.y = np.empty(N+1)
         self.z = np.empty(N+1)
         self.x_col = np.empty(N)
-        self.y_col = np.empty(N)
         self.z_col = np.empty(N)
         self.x_mid = np.zeros((3,N))
-        self.y_mid = np.zeros((3,N))
         self.z_mid = np.zeros((3,N))
         self.x_neut = np.empty(N)
-        self.y_neut = np.empty(N)
         self.z_neut = np.empty(N)
         self.x_le = 0.
-        self.y_le = 0.
         self.z_le = 0.
