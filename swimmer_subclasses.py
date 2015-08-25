@@ -375,7 +375,7 @@ class Body(object):
         return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
 # TODO: Change neutral_axis to neutral_plane
-    def neutral_axis(self, x, y, T, DSTEP=0, TSTEP=0):
+    def neutral_axis(self, x, y, T, THETA, HEAVE, DSTEP=0, TSTEP=0):
         """Finds a body's neutral axis for a given time.
 
         The neutral axis is the axis which coincides with the chord line and
@@ -403,14 +403,14 @@ class Body(object):
         Z0 = self.MP.Z0
         V0 = self.MP.V0
 
-        x_neut = X0 + (x+DSTEP)*np.cos(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI)) + V0*T
+        x_neut = X0 + (x+DSTEP)*np.cos(THETA) + V0*T
         y_neut = Y0 + (y +DSTEP)
-        z_neut = Z0 + (x+DSTEP)*np.sin(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI))
+        z_neut = Z0 + (x+DSTEP)*np.sin(THETA) + HEAVE
         
         return(x_neut, y_neut, z_neut)
 
 #   TODO: Update panel_positions to account for 3D objects
-    def panel_positions(self, DSTEP, T):
+    def panel_positions(self, DSTEP, T, THETA, HEAVE):
         """Updates all the absolute-frame coordinates of the body.
 
         Args:
@@ -419,15 +419,16 @@ class Body(object):
             THETA: Current pitching angle.
         """
         bfx = self.BF.x
+        bfy = self.BF.y
         bfz = self.BF.z
-        bfz_col = self.BF.z_col
+        bfz_mid = self.BF.z_mid
         V0 = self.V0 # Used only for x_le
 
-        (x_neut, z_neut) = self.neutral_axis(bfx, T, THETA, HEAVE)
+        (x_neut, y_neut, z_neut) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE)
 
         # Infinitesimal differences on the neutral axis to calculate the tangential and normal vectors
-        (xdp_s, zdp_s) = self.neutral_axis(bfx, T, THETA, HEAVE, DSTEP)
-        (xdm_s, zdm_s) = self.neutral_axis(bfx, T, THETA, HEAVE, -DSTEP)
+        (xdp_s, ydp_s, zdp_s) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE, DSTEP)
+        (xdm_s, ydm_s, zdm_s) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE, -DSTEP)
 
         # Absolute-frame panel endpoint positions for time t
         afx = x_neut + point_vectors(xdp_s, xdm_s, zdp_s, zdm_s)[2]*bfz
@@ -441,8 +442,8 @@ class Body(object):
         # They should be shifted inside or outside of the boundary depending on the dirichlet or neumann condition
         # Shifting surface collocation points some percent of the height from the neutral axis
         # Normal vectors point outward but positive S is inward, so the shift must be subtracted from the panel midpoints
-        afx_col = x_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_col)
-        afz_col = z_mid - self.S*panel_vectors(afx, afz)[3]*np.absolute(bfz_col)
+        afx_col = x_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_mid)
+        afz_col = z_mid - self.S*panel_vectors(afx, afz)[3]*np.absolute(bfz_mid)
 
         self.AF.x = afx
         self.AF.z = afz

@@ -21,7 +21,7 @@ P = PARAMETERS = {
 , 'N_CHORD':            61                  # Number of chordwise panels.
 , 'N_SPAN':             61                  # Number of spanwise panels.
 , 'C':                  1.0                 # Chord  length of rectangular body.
-, 'SPAN':               0.21                # Span length of the body
+, 'SPAN':               2.0                 # Span length of the body
 , 'C_B':                2.0                 # Body chord length.
 , 'K':                  2.-(12.4/180)       # Van de Vooren airfoil parameter.
 , 'EPSILON':            0.075               # Van de Vooren airfoil parameter.

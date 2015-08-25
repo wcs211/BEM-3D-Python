@@ -15,7 +15,7 @@ def basic_xyz(x,y,z,color='b'):
     ax.set_aspect('equal')
     surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap='hot', linewidth=0, antialiased=False)
     ax.set_xlim(-1.2, 1.2)
-    ax.set_ylim(-1.2, 1.2)
+    ax.set_ylim(-0.2, 2.2)
     ax.set_zlim(-1.2, 1.2)
     plt.show()
     
