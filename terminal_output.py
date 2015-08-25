@@ -20,7 +20,7 @@ class print_output(object):
         print "/*---------------------------------------------------------------------------*\\"
         print "| .   )\\      Py thon       |                                                 |"
         print "| \\`.-' `-oo                | Written by:  Lehigh Biofluids Group             |"
-        print "|  ) _  __,0) B  oundary    | Version:     %s                              |" % VERSION
+        print "|  ) _  __,0) B  oundary    | Version:     %s                        |" % VERSION
         print "| /.' )/      E  lement     | Web:         http://www.lehigh.edu/             |"
         print "| '           M  ethod      |                                                 |"
         print "\\*---------------------------------------------------------------------------*/"
