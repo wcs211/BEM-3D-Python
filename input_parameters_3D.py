@@ -22,8 +22,8 @@ P = PARAMETERS = {
 # Geometry Definition                                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 , 'SW_GEOMETRY':    'FP'
-, 'N_CHORD':        100                 # Number of chordwise panels.
-, 'N_SPAN':         50                  # Number of spanwise panels.
+, 'N_CHORD':        61                  # Number of chordwise panels.
+, 'N_SPAN':         61                  # Number of spanwise panels.
 , 'C':              1.0                 # Chord  length of rectangular body.
 , 'SPAN':           0.21
 , 'C_B':            2.0                 # Body chord length.
@@ -113,34 +113,35 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 P['DEL_T']   = 1. / P['F'] / P['N_STEP']            # Time step.
-P['COUNTER'] = P['N_CYC'] * P['N_STEP'] + 1
+P['COUNTER'] = P['N_CYCLE'] * P['N_STEP'] + 1
 
 # Constants dependent on declared parameters
+P['N'] = 4*P['N_CHORD']*P['N_SPAN']                 # Total number of body panels.
 P['RE'] = -P['V0']*P['C']/P['NU']                   # Reynolds number based on the body chord length.
 P['U0'] = -P['V0']*np.cos(P['ALPHA_MAX'])           # U component of free-stream velocity.
 P['W0'] = P['V0']*np.sin(P['ALPHA_MAX'])            # W component of free-stream velocity.
 P['RF'] = (2*np.pi*P['F']*P['C'])/abs(P['U0'])      # Reduced frequency based on root chord.
-P['ST'] = P['F']*2*P['H_MAX']/abs(P['U0'])          # Strouhal number based on the fin tip peak-to-peak amplitude.  
+P['ST'] = P['F']*2*P['HEAVE_MAX']/abs(P['U0'])      # Strouhal number based on the fin tip peak-to-peak amplitude.  
 P['V_CORE'] = P['C_B']*P['DELTA_CORE']              # Vortex core radius.
 P['CUT_OFF'] = 1**-10*P['C_B']                      # Cutoff distance for influence coeff. calc: body panels.
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Body Motion Parameters                                                      #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-P['T']           = [P['DEL_T'] * i for i in xrange(P['COUNTER'])]
-RAMP             = [0.5*np.tanh(0.25*(P['T'][i]-4))+0.5 for i in xrange(P['COUNTER'])]
-RAMP_P           = [0.5*np.tanh(0.25*((P['T'][i] + P['TSTEP'])-4))+0.5 for i in xrange(P['COUNTER'])]
-RAMP_M           = [0.5*np.tanh(0.25*((P['T'][i] - P['TSTEP'])-4))+0.5 for i in xrange(P['COUNTER'])]
+P['T']           = [P['DEL_T'] * i for i in range(P['COUNTER'])]
+RAMP             = [0.5*np.tanh(0.25*(P['T'][i]-4))+0.5 for i in range(P['COUNTER'])]
+RAMP_P           = [0.5*np.tanh(0.25*((P['T'][i] + P['TSTEP'])-4))+0.5 for i in range(P['COUNTER'])]
+RAMP_M           = [0.5*np.tanh(0.25*((P['T'][i] - P['TSTEP'])-4))+0.5 for i in range(P['COUNTER'])]
 
-P['HEAVE']       = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * P['T'][i] + P['PHI'])  * RAMP[i] for i in xrange(P['COUNTER'])]
-P['HEAVE_MINUS'] = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP']) + P['PHI']) * RAMP_M[i] for i in xrange(P['COUNTER'])]
-P['HEAVE_PLUS']  = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP']) + P['PHI']) * RAMP_P[i] for i in xrange(P['COUNTER'])]
-H_DOT            = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * P['T'][i] + P['PHI']) for i in xrange(P['COUNTER'])]
-H_DOT_PLUS       = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP']) + P['PHI']) for i in xrange(P['COUNTER'])]
-H_DOT_MINUS      = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP']) + P['PHI']) for i in xrange(P['COUNTER'])]
-P['THETA']       = [RAMP[i] * np.arctan(H_DOT[i] / P['V0']) for i in xrange(P['COUNTER'])]
-P['THETA_MINUS'] = [RAMP_M[i] * np.arctan(H_DOT_MINUS[i] / P['V0']) for i in xrange(P['COUNTER'])]
-P['THETA_PLUS']  = [RAMP_P[i] * np.arctan(H_DOT_PLUS[i] / P['V0']) for i in xrange(P['COUNTER'])]
+P['HEAVE']       = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * P['T'][i] + P['PHI'])  * RAMP[i] for i in range(P['COUNTER'])]
+P['HEAVE_MINUS'] = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP']) + P['PHI']) * RAMP_M[i] for i in range(P['COUNTER'])]
+P['HEAVE_PLUS']  = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP']) + P['PHI']) * RAMP_P[i] for i in range(P['COUNTER'])]
+H_DOT            = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * P['T'][i] + P['PHI']) for i in range(P['COUNTER'])]
+H_DOT_PLUS       = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP']) + P['PHI']) for i in range(P['COUNTER'])]
+H_DOT_MINUS      = [2 * np.pi * P['HEAVE_MAX'] * P['F'] * np.cos(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP']) + P['PHI']) for i in range(P['COUNTER'])]
+P['THETA']       = [RAMP[i] * np.arctan(H_DOT[i] / P['V0']) for i in range(P['COUNTER'])]
+P['THETA_MINUS'] = [RAMP_M[i] * np.arctan(H_DOT_MINUS[i] / P['V0']) for i in range(P['COUNTER'])]
+P['THETA_PLUS']  = [RAMP_P[i] * np.arctan(H_DOT_PLUS[i] / P['V0']) for i in range(P['COUNTER'])]
 
 #P['THETA']       = [np.tanh(P['T'][i])*5./180.*np.pi for i in xrange(P['COUNTER'])]
 #P['THETA_MINUS'] = [np.tanh(P['T'][i])*5./180.*np.pi for i in xrange(P['COUNTER'])]

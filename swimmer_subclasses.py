@@ -107,175 +107,268 @@ class Body(object):
         Returns:
             A Body object with the Van de Vooren airfoil geometry.
         """
-        N = GeoVDVParameters.N
+        N_CHORD = GeoVDVParameters.N_CHORD
+        N_SPAN = GeoVDVParameters.N_SPAN
         S = GeoVDVParameters.S
         C = GeoVDVParameters.C
+        SPAN = GeoVDVParameters.SPAN
         K = GeoVDVParameters.K
         EPSILON = GeoVDVParameters.EPSILON
 
-        A = C*((1+EPSILON)**(K-1))*(2**(-K))
+        # Defining Chord length function
+        C = C * np.ones(N_SPAN)
+        
+        # Initialize bottom and top x and z coordinates and parameters
+        A = np.zeros((N_CHORD, N_SPAN))   
+        R1 = np.zeros((N_CHORD, N_SPAN))
+        R2 = np.zeros((N_CHORD, N_SPAN))
+        THETA1 = np.zeros((N_CHORD, N_SPAN))
+        THETA2 = np.zeros((N_CHORD, N_SPAN))
+        x_body = np.zeros((N_CHORD,N_SPAN))
+        x = np.zeros((2*N_CHORD-1, N_SPAN))
+        y = np.zeros((2*N_CHORD-1, N_SPAN))
+        z = np.zeros((2*N_CHORD-1, N_SPAN))
+        z_top = np.zeros((N_CHORD, N_SPAN))
+        z_bot = np.zeros((N_CHORD, N_SPAN))
+        x_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        y_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        z_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        
+        # Stepping through each spanwise position to calculate the positions of
+        # the fluke neutral plane at the given time step.
+        for i in range(N_SPAN):   
+                   
+            A[:,i] = C[i]*((1+EPSILON)**(K-1))*(2**(-K))
+            THETA = np.linspace(0,np.pi,N_SPAN)
+            R1[:,i] = np.sqrt((A[:,i]*np.cos(THETA)-A[:,i])**2+(A[:,i]**2)*np.sin(THETA)**2)
+            R2[:,i] = np.sqrt((A[:,i]*np.cos(THETA)-EPSILON*A[:,i])**2+(A[:,i]**2)*np.sin(THETA)**2)
+            
+            THETA1[:,i] = np.arctan2((A[:,i]*np.sin(THETA)) , (A[:,i]*np.cos(THETA)-A[:,i]))
+            THETA2[:,i] = np.arctan2(A[:,i]*np.sin(THETA) ,(A[:,i]*np.cos(THETA)-EPSILON*A[:,i]))
+            
+            x_body[:,i] = ((R1[:,i]**K)/(R2[:,i]**(K-1)))*(np.cos(K*THETA1[:,i])*np.cos((K-1)*THETA2[:,i]) + np.sin(K*THETA1[:,i])*np.sin((K-1)*THETA2[:,i]))
+            z_top[:,i] = ((R1[:,i]**K)/(R2[:,i]**(K-1)))*(np.sin(K*THETA1[:,i])*np.cos((K-1)*THETA2[:,i]) - np.cos(K*THETA1[:,i])*np.sin((K-1)*THETA2[:,i]))
+            z_bot[:,i] = -((R1[:,i]**K)/(R2[:,i]**(K-1)))*(np.sin(K*THETA1[:,i])*np.cos((K-1)*THETA2[:,i]) - np.cos(K*THETA1[:,i])*np.sin((K-1)*THETA2[:,i]))
+            
+            x_body[:,i] = x_body[:,i]-x_body[-1,i] # Carrying the leading edge to the origin
+            x_body[0,i] = C[i]
+            
+            z_top[0,i] = 0.
+            z_bot[0,i] = 0.
+            z_bot[-1,i] = 0.
+            
+            # Merge top and bottom surfaces together
+            x[:,i] = np.hstack((x_body[:,i] , x_body[-2::-1,i]))
+            z[:,i] = np.hstack((z_bot[:,i] , z_top[-2::-1,i]))
+            
+        for i in range(2*N_CHORD-1):
+            y[i,:] = np.linspace(0.,SPAN,N_SPAN)
+        
+        for i in range(N_SPAN-2):
+            x_mid[:,i] = ((x[1:,i] + x[:-1,i])/2)
+            y_mid[:,i] = ((y[1:,i] + y[:-1,i])/2)
+            z_mid[:,i] = ((z[1:,i] + z[:-1,i])/2)
 
-        THETA = np.linspace(0,np.pi,N/2+1)
+        BodyFrameCoordinates = PC.BodyBFC(x, y, z, x_mid, y_mid, z_mid)
 
-        R1 = np.sqrt((A*np.cos(THETA)-A)**2+(A**2)*np.sin(THETA)**2)
-        R2 = np.sqrt((A*np.cos(THETA)-EPSILON*A)**2+(A**2)*np.sin(THETA)**2)
-
-        THETA1 = np.arctan2((A*np.sin(THETA)) , (A*np.cos(THETA)-A))
-        THETA2 = np.arctan2(A*np.sin(THETA) ,(A*np.cos(THETA)-EPSILON*A))
-
-        x = ((R1**K)/(R2**(K-1)))*(np.cos(K*THETA1)*np.cos((K-1)*THETA2) + np.sin(K*THETA1)*np.sin((K-1)*THETA2))
-        z_top = ((R1**K)/(R2**(K-1)))*(np.sin(K*THETA1)*np.cos((K-1)*THETA2) - np.cos(K*THETA1)*np.sin((K-1)*THETA2))
-        z_bot = -((R1**K)/(R2**(K-1)))*(np.sin(K*THETA1)*np.cos((K-1)*THETA2) - np.cos(K*THETA1)*np.sin((K-1)*THETA2))
-
-        x = x-x[-1] # Carrying the leading edge to the origin
-        x[0] = C
-
-        z_top[0] = 0
-        z_bot[0] = 0
-        z_bot[-1] = 0
-
-        # Merge top and bottom surfaces together
-        x = np.hstack((x , x[-2::-1]))
-        z = np.hstack((z_bot , z_top[-2::-1]))
-
-        x_col = ((x[1:] + x[:-1])/2)
-        z_col = ((z[1:] + z[:-1])/2)
-
-        BodyFrameCoordinates = PC.BodyBFC(x, z, x_col, z_col)
-
-        return Body(N, S, BodyFrameCoordinates, MotionParameters)
+        return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
     @classmethod
     #Flat plate geometry
     def flat_plate(cls, GeoFPParameters, MotionParameters):
-        N = GeoFPParameters.N
+        N_CHORD = GeoFPParameters.N_CHORD
+        N_SPAN = GeoFPParameters.N_SPAN
         S = GeoFPParameters.S
         C = GeoFPParameters.C
+        SPAN = GeoFPParameters.SPAN
         D = GeoFPParameters.D
+        
+        # Defining mid-chord line
+        MC = 0.5 * C * np.ones(N_SPAN)
+        # Defining Chord length function
+        C = C * np.ones(N_SPAN)
+        # Defining Leading and Trailing Edge Line
+        TE = MC + 0.5 * C
+        LE = MC - 0.5 * C
+        
+        # Initialize bottom and top x and z coordinates
+        xb = np.zeros((N_CHORD, N_SPAN))
+        xt = np.zeros((N_CHORD, N_SPAN))
+        zb = np.zeros((N_CHORD, N_SPAN))
+        zt = np.zeros((N_CHORD, N_SPAN))
+        x  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        y  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        z  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        x_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        y_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        z_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        oLE = np.zeros(N_SPAN)
+        oTE = np.zeros(N_SPAN)
+        
+        for i in range(N_SPAN):
+            # Create bottom x-corrdinates
+            start = 0.
+            stop  = np.pi
+            step  = np.copy(N_CHORD)
+            theta = np.linspace(start,stop,step)
+            xb[:,i]    = 0.5 * (C[i] * np.cos(theta) + C[i])
+            
+            # Create top x-corrdinates
+            start = np.pi
+            stop  = 0.
+            step  = np.copy(N_CHORD)
+            theta = np.linspace(start,stop,step)
+            xt[:,i]    = 0.5 * (C[i] * np.cos(theta) + C[i])
+            
+            # Create bottom and top z-coordinates
+            zb[:,i] = -0.5 * D * np.ones(N_CHORD)
+            zt[:,i] =  0.5 * D * np.ones(N_CHORD)
+        
+            # LE and TE circle origins (z is assumed to be zero)
+            oLE[i] = 0.5 * D
+            oTE[i] = C[i] - 0.5 * D
+        
+            # Calculate new theta positions for points on the rounded ends
+            count1 = np.shape(xb[xb[:,i]>=oTE[i],i])[0]
+            count2 = np.shape(xb[xb[:,i]<=oLE[i],i])[0]
+            count3 = np.shape(xt[xt[:,i]<=oLE[i],i])[0]
+            count4 = np.shape(xt[xt[:,i]>=oTE[i],i])[0]
+        
+            # Determine angular new positions along the rounded ends 
+            thetab = np.linspace(0,np.pi,count1+count2).T
+            thetat = np.linspace(np.pi,2*np.pi,count3+count4).T
+        
+            # Calculate transformed leading and trailing edge points
+            x1 = oTE[i] + 0.5 * D * np.cos(thetab[0:count1])
+            z1 = 0.     - 0.5 * D * np.sin(thetab[0:count1])
+            x2 = oLE[i] + 0.5 * D * np.cos(thetab[-1:-1-count1+1:-1])
+            z2 = 0.     - 0.5 * D * np.sin(thetab[-1:-1-count1+1:-1])
+            x3 = oLE[i] + 0.5 * D * np.cos(thetat[0:count3])
+            z3 = 0.     - 0.5 * D * np.sin(thetat[0:count3])
+            x4 = oTE[i] + 0.5 * D * np.cos(thetat[-1:-1-count3+1:-1])
+            z4 = 0.     - 0.5 * D * np.sin(thetat[-1:-1-count3+1:-1])
+        
+            # Replace x transformed points
+            xb[:count1,i]           = x1
+            xb[-1:-1-count2+1:-1,i] = x2
+            xt[:count3,i]           = x3
+            xt[-1:-1-count4+1:-1,i] = x4
+        
+            # Replace z transformed points
+            zb[:count1,i]           = z1
+            zb[-1:-1-count2+1:-1,i] = z2
+            zt[:count3,i]           = z3
+            zt[-1:-1-count4+1:-1,i] = z4
+        
+            # Make sure LE and TE points are correctly enforced (no round-off error)
+            zb[0,i]  = 0.
+            zt[0,i]  = 0.
+            zb[-1,i] = 0.
+        
+            # Merge top and bottom surfaces together
+            x[:,i] = np.hstack((xb[:,i] , xb[-2::-1,i]))
+            z[:,i] = np.hstack((zb[:,i] , zt[-2::-1,i]))
+        
+            # Shift points to correct LE position
+            x[:,i] += LE[i]
+        
+        # Create top y-corrdinates   
+        for i in range(2 * N_CHORD - 1):
+            y[i,:] = np.linspace(0., SPAN, N_SPAN)
+         
+        # Define panel mid-points   
+        for i in range(N_SPAN - 2):
+            x_mid[:,i] = 0.25 * (x[1:,i] + x[:-1,i] + x[1:,i+1] + x[:-1,i+1])
+            y_mid[:,i] = 0.25 * (y[1:,i] + y[:-1,i] + y[1:,i+1] + y[:-1,i+1])
+            z_mid[:,i] = 0.25 * (z[1:,i] + z[:-1,i] + z[1:,i+1] + z[:-1,i+1])   
 
-        # Stepping through each spanwise position to calculate the positions of the
-        # fin neutral plane at the given time step.
-        start = 0
-        stop  = np.pi
-        step  = (N+2)/2
-        theta = np.linspace(start,stop,step)
-        xb = (C*np.cos(theta).T + C)/(2.)
-#        print xb
+        BodyFrameCoordinates = PC.BodyBFC(xb, zb, x_mid, y_mid, z_mid)
 
-        start = np.pi
-        stop  = 0
-        step  = (N+2)/2
-        theta = np.linspace(start,stop,step)
-        xt = (C*np.cos(theta).T + C)/(2.)
-#        print xt
-#        xb = np.linspace(c,0,(N+2)/2).T
-#        xt = np.linspace(0,c,(N+2)/2).T
-        zb = -0.5*D*np.ones((N+2)/2)
-        zt =  0.5*D*np.ones((N+2)/2)
-
-        # Circle origins ( z is assumed to be zero)
-        oF = 0.5 * D
-        oB = C - 0.5 * D
-
-        # Calculate new theta positions for points on the rounded ends
-        count1 = np.shape(xb[xb>=oB])[0]
-        count2 = np.shape(xb[xb<=oF])[0]
-        count3 = np.shape(xt[xt<=oF])[0]
-        count4 = np.shape(xt[xt>=oB])[0]
-
-        thetab = np.linspace(0,np.pi,count1+count2).T
-        thetat = np.linspace(np.pi,2*np.pi,count3+count4).T
-
-        # Calculate transform leading and trailing edge points
-        x1 = oB + 0.5 * D * np.cos(thetab[0:count1])
-        z1 = 0  - 0.5 * D * np.sin(thetab[0:count1])
-        x2 = oF + 0.5 * D * np.cos(thetab[-1:-1-count1+1:-1])
-        z2 = 0  - 0.5 * D * np.sin(thetab[-1:-1-count1+1:-1])
-        x3 = oF + 0.5 * D * np.cos(thetat[0:count3])
-        z3 = 0  - 0.5 * D * np.sin(thetat[0:count3])
-        x4 = oB + 0.5 * D * np.cos(thetat[-1:-1-count3+1:-1])
-        z4 = 0  - 0.5 * D * np.sin(thetat[-1:-1-count3+1:-1])
-
-        # Replace x and z transformed points
-        xb[:count1] = x1
-        xb[-1:-1-count2+1:-1] = x2
-        xt[:count3] = x3
-        xt[-1:-1-count4+1:-1] = x4
-
-        zb[:count1] = z1
-        zb[-1:-1-count2+1:-1] = z2
-        zt[:count3] = z3
-        zt[-1:-1-count4+1:-1] = z4
-
-        zb[0] = 0
-        zt[0] = 0
-        zb[-1] = 0
-
-        # Merge top and bottom surfaces together
-        xb = np.hstack((xb , xb[-2::-1]))
-        zb = np.hstack((zb , zt[-2::-1]))
-
-        xb_col = ((xb[1:] + xb[:-1])/2)
-        zb_col = ((zb[1:] + zb[:-1])/2)
-
-        BodyFrameCoordinates = PC.BodyBFC(xb, zb, xb_col, zb_col)
-
-        return Body(N, S, BodyFrameCoordinates, MotionParameters)
+        return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
     @classmethod
     #Tear-drop geometry
     def tear_drop(cls, GeoTDParameters, MotionParameters):
-        N = GeoTDParameters.N
+        N_CHORD = GeoTDParameters.N_CHORD
+        N_SPAN = GeoTDParameters.N_SPAN
         S = GeoTDParameters.S
         C = GeoTDParameters.C
+        SPAN = GeoTDParameters.SPAN
         D = GeoTDParameters.D
 
+        # Defining Chord length function
+        C = C * np.ones(N_SPAN)
+
+        # Initialize bottom and top x and z coordinates
+        
+        xb = np.zeros((N_CHORD, N_SPAN))
+        xt = np.zeros((N_CHORD, N_SPAN))
+        x_c = np.zeros((N_CHORD, N_SPAN))
+        xb1 = np.zeros((N_SPAN))
+        xb2 = np.zeros((N_SPAN))
+        zb = np.zeros((N_CHORD, N_SPAN))
+        zt = np.zeros((N_CHORD, N_SPAN))
+        x  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        y  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        z  = np.zeros((2 * N_CHORD - 1, N_SPAN))
+        x_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        y_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        z_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1))
+        
+        
         # Stepping through each spanwise position to calculate the positions of
-        # the fin neutral plane at the given time step.
-        xb = np.linspace(np.pi, 0., (N+2.)/2)
-        xt = np.linspace(0., np.pi, (N+2.)/2)
+        # the fluke neutral plane at the given time step.
+        for i in range(N_SPAN):   
+                   
+            xb[:,i] = np.linspace(np.pi,0.,N_CHORD)
+            xt[:,i] = np.linspace(0.,np.pi,N_CHORD)
+            
+            # Slopes and intersects for the line segments
+            m = -D/2/(C[i] - D/2)
+            b = D/2 + D**2/4/(C[i] - D/2)
+            
+                    # Tear drop shape equation.
+            x_c[:,i] = 0.5 * (1 - np.cos(xb[:,i]))
+            xb[:,i] = x_c[:,i] * C[i]
+            xb1 = xb[xb[:,i] <= D/2]
+            xb2 = xb[xb[:,i] > D/2]
+            
+            zb2 = -m * xb2[:,i] - b
+            zb1 = -np.sqrt((D/2)**2 - (xb1[:,i] - D/2)**2)
+            zb[:,i] = np.hstack((zb2, zb1))
+            
+                    # Tear drop shape equation.
+            x_c[:,i] = 0.5 * (1 - np.cos(xt[:,i]))
+            xt[:,i] = x_c[:,i] * C[i]
+            xt1 = xt[xt[:,i] <= D/2]
+            xt2= xt[xt[:,i] > D/2]
+            
+            zt1 = np.sqrt((D/2)**2 - (xt1[:,i] - D/2)**2)
+            zt2 = m * xt2[:,i] + b
+            zt[:,i] = np.hstack((zt1, zt2))
+                    
+            zb[0,i] = 0.
+            zt[0,i] = 0.
+            zb[-1,i] = 0.
+            
+            # Merge top and bottom surfaces together
+            x[:,i] = np.hstack((xb[:,i] , xt[1:,i]))
+            z[:,i] = np.hstack((zb[:,i] , zt[1:,i]))
+            
+        for i in range(2*N_CHORD-1):
+            y[i,:] = np.linspace(0.,SPAN,N_SPAN)
+        
+        for i in range(N_SPAN-2):
+            x_mid[:,i] = ((x[1:,i] + x[:-1,i])/2)
+            y_mid[:,i] = ((y[1:,i] + y[:-1,i])/2)
+            z_mid[:,i] = ((z[1:,i] + z[:-1,i])/2)
 
-        # Slopes and intersects for the line segments
-        m = -D/2/(C - D/2)
-        b = D/2 + D**2/4/(C - D/2)
+        BodyFrameCoordinates = PC.BodyBFC(x, y, z, x_mid, y_mid, z_mid)
 
-        # Tear drop shape equation.
-        x_c = 0.5 * (1 - np.cos(xb))
-        xb = x_c * C
-        xb1 = xb[xb <= D/2]
-        xb2 = xb[xb > D/2]
-
-        zb2 = -m * xb2 - b
-        zb1 = -np.sqrt((D/2)**2 - (xb1 - D/2)**2)
-        zb = np.hstack((zb2, zb1))
-
-        # Tear drop shape equation.
-        x_c = 0.5 * (1 - np.cos(xt))
-        xt = x_c * C
-        xt1 = xt[xt <= D/2]
-        xt2 = xt[xt > D/2]
-
-        zt1 = np.sqrt((D/2)**2 - (xt1 - D/2)**2)
-        zt2 = m * xt2 + b
-        zt = np.hstack((zt1, zt2))
-
-        zb[0] = 0
-        zt[0] = 0
-        zb[-1] = 0
-
-        # Merge top and bottom surfaces together
-        x = np.hstack((xb , xt[1:]))
-        z = np.hstack((zb , zt[1:]))
-
-        x_col = ((x[1:] + x[:-1])/2)
-        z_col = ((z[1:] + z[:-1])/2)
-
-        BodyFrameCoordinates = PC.BodyBFC(x, z, x_col, z_col)
-
-        return Body(N, S, BodyFrameCoordinates, MotionParameters)
+        return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
 # TODO: Change neutral_axis to neutral_plane
-    def neutral_axis(self, x, T, DSTEP=0, TSTEP=0):
+    def neutral_axis(self, x, y, T, DSTEP=0, TSTEP=0):
         """Finds a body's neutral axis for a given time.
 
         The neutral axis is the axis which coincides with the chord line and
@@ -285,10 +378,11 @@ class Body(object):
 
         Args:
             x: An array of body-frame x-coordinates to use as reference points.
+            y: An array of body-frame y-coordinates to use as reference points.
             DSTEP, TSTEP: Small incremental distance/time offsets
                 (intended for differencing).
             T: Time of the current step.
-            X0, Z0: Initial position of the leading edge (absolute frame).
+            X0, Y0, Z0: Initial position of the leading edge (absolute frame).
             THETA_MAX: Maximum pitching angle of the body.
             F: Frequency of the body's pitching motion.
             PHI: Phase offset of the body's pitching motion.
@@ -298,6 +392,7 @@ class Body(object):
             x_neut and z_neut: X- and Z-coordinates of the neutral axis points.
         """
         X0 = self.MP.X0
+        Y0 = self.MP.Y0
         Z0 = self.MP.Z0
         THETA_MAX = self.MP.THETA_MAX
         F = self.MP.F
@@ -305,9 +400,12 @@ class Body(object):
         V0 = self.MP.V0
 
         x_neut = X0 + (x+DSTEP)*np.cos(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI)) + V0*T
+        y_neut = Y0 + (y +DSTEP)
         z_neut = Z0 + (x+DSTEP)*np.sin(THETA_MAX*np.sin(2*np.pi*F*(T+TSTEP) + PHI))
+        
+        
 
-        return(x_neut, z_neut)
+        return(x_neut, y_neut, z_neut)
 
 #   TODO: Update panel_positions to account for 3D objects
     def panel_positions(self, DSTEP, T):

@@ -34,7 +34,6 @@ class Swimmer(object):
         self.DELTA_CORE = SwimmerParameters.DELTA_CORE
         self.SW_KUTTA = SwimmerParameters.SW_KUTTA
 
-#       TODO: Create new 3D Geometries and add them here
         if GeoParameters.SW_GEOMETRY == 'VDV':
             self.Body = Body.from_van_de_vooren(GeoParameters, MotionParameters)
 
