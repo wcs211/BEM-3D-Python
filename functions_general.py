@@ -7,30 +7,60 @@ import numpy as np
 # Ns is the numper of panels in spanwise direction
 # Nc is the number of panels in chordwise direction
 # TODO: panel_vectors now need a second tangential vector and area of panel
-def panel_vectors(x,y,z,Nc,Ns):
+def panel_vectors(x,y,z,Ns,Nc):
 
-    # each column stores another spanwise cros sectional panel lengths
-    lpanel = np.sqrt((x[1:,0:Ns]-x[:-1,0:Ns])**2 + (y[1:,0:Ns]-y[:-1,0:Ns])**2 + (z[1:,0:Ns]-z[:-1,0:Ns])**2)
-    tx = (x[1:,0:Ns]-x[:-1,0:Ns])/lpanel
-    ty = (y[0:Nc,1:]-y[0:Nc,:-1])/lpanel.T
-    tz = (z[1:,0:Ns]-z[:-1,0:Ns])/lpanel
-    #nx = -tz
-    #nz = tx
-    return (tx,ty,tz,nx,ny,nz,lpanel)
+    # diagonal vectors associated to each panel
+    diag1 = (x[:-1,1:]-x[1:,:-1],y[:-1,1:]-y[1:,:-1],z[:-1,1:]-z[1:,:-1])
+    diag2 = (x[1:,1:]-x[:-1,:-1],y[1:,1:]-y[:-1,:-1],z[1:,1:]-z[:-1,:-1])
+    
+    diag1 = np.asarray(diag1)
+    diag2 = np.asarray(diag2)
+    
+    vn_x = np.zeros((Nc-1,Ns-1))
+    vn_y = np.zeros((Nc-1,Ns-1))
+    vn_z = np.zeros((Nc-1,Ns-1))
+    
+    for i in np.arange(Ns-1):
+        for j in np.arange(Nc-1):
+        
+            v_n = np.cross(diag1[:,i,j],diag2[:,i,j])
+            #full lengths of each normal vector component
+            vn_x[i,j] = v_n[0]
+            vn_x[i,j] = v_n[1]
+            vn_x[i,j] = v_n[2]
+
+    vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    vn_y_unit = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    vn_z_unit = vn_z/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)    
+
+    return (vn_x_unit,vn_y_unit,vn_z_unit)
 
     # x,z components of each midpoint's/collocation point's tangential and normal vectors
 # TODO: point_vectors now need a second tangential vector
-def point_vectors(v1,v2,v3,v4):
-    vy = v1 - v2
-    vx = v3 - v4        
-    vn = np.cross(vx,vy) # normal vectors at every panel corner points
+def point_vectors(Nc, Ns, v1,v2,v3,v4):
+    vy = np.asarray(v1) - np.asarray(v2)
+    vx = np.asarray(v3) - np.asarray(v4)        
     
-    #components of normal vectors
-    vn_x = vn(1)/np.linalg.norm(vn)
-    vn_y = vn(2)/np.linalg.norm(vn)
-    vn_z = vn(3)/np.linalg.norm(vn)  
-    
-    return(vn_x, vn_y, vn_z)
+    vn_x = np.zeros((Nc,Ns))
+    vn_y = np.zeros((Nc,Ns))
+    vn_z = np.zeros((Nc,Ns))
+
+    for i in np.arange(Ns):
+        for j in np.arange(Nc):
+        
+            v_n = np.cross(vx[:,i,j],vy[:,i,j])
+            #full lengths of each normal vector component
+            vn_x[i,j] = v_n[0]
+            vn_x[i,j] = v_n[1]
+            vn_x[i,j] = v_n[2]
+   
+   
+    vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    vn_y_unit = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    vn_z_unit = vn_z/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)    
+
+    return (vn_x_unit,vn_y_unit,vn_z_unit)        
+
 
 def archive(array, axis=0):
     """

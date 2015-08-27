@@ -374,7 +374,6 @@ class Body(object):
 
         return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
-#   TODO: Change neutral_axis to neutral_plane
     def neutral_plane(self, x, y, T, THETA, HEAVE, DSTEP1=0, DSTEP2=0, DSTEP3=0):
         """Finds a body's neutral plane for a given time.
 
@@ -384,46 +383,44 @@ class Body(object):
         The plane that it finds is in an absolute frame of reference.
 
         Args:
-            x: An array of body-frame x-coordinates to use as reference points.
-            y: An array of body-frame y-coordinates to use as reference points.
-            DSTEP, TSTEP: Small incremental distance/time offsets
-                (intended for differencing).
+            x: A 2D array of fin-frame x-coordinates to use as reference points.
+            Each column is a chord cross section and each row is a span cross section
+            DSTEP: Small incremental distance offset (intended for differencing).
             T: Time of the current step.
-            X0, Y0, Z0: Initial position of the leading edge (absolute frame).
-            THETA_MAX: Maximum pitching angle of the body.
-            F: Frequency of the body's pitching motion.
-            PHI: Phase offset of the body's pitching motion.
-            V0: Free-stream velocity.
+            THETA: Current pitching angle.
 
         Returns:
-            x_neut and z_neut: X- and Z-coordinates of the neutral axis points.
+            x_neut, y_neut and z_neut: 
+            X-Y and Z-coordinates of the neutral plane points.
         """
         X0 = self.MP.X0
         Y0 = self.MP.Y0
         Z0 = self.MP.Z0
         V0 = self.MP.V0
-
         ##Neutral plane positions(x_neut y_neut z_neut) are going to be 
-        ##set according to the type of the motion.    
+        ##set according to the type of the motion.
+        
         x_neut = X0 + (x+DSTEP1)*np.cos(THETA) + V0*T
         y_neut = Y0 + y+DSTEP2
         z_neut = Z0 + (y+DSTEP3)*np.sin(THETA) + HEAVE
-        
-        return(x_neut, y_neut, z_neut)
 
-#   TODO: Update panel_positions to account for 3D objects
+        return(x_neut, y_neut, z_neut)
+        
     def panel_positions(self, DSTEP1, DSTEP2, DSTEP3, T, THETA, HEAVE):
         """Updates all the absolute-frame coordinates of the body.
 
         Args:
-            DSTEP: Small incremental distance to pass into neutral_axis().
+            DSTEP: Small incremental distance to pass into neutral_plane().
             T: Time of current step.
             THETA: Current pitching angle.
+
         """
+        Nc = self.BF.x.shape[0]
+        Ns = self.BF.x.shape[1]
         bfx = self.BF.x
-        bfy = self.BF.y
+        bfy = self.BF.y                 #No y information coming from the geometry class yet
         bfz = self.BF.z
-        bfz_mid = self.BF.z_mid
+        bfz_col = self.BF.z_mid
         V0 = self.V0 # Used only for x_le
 
         (x_neut, y_neut, z_neut) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE)
@@ -431,13 +428,14 @@ class Body(object):
         # Infinitesimal differences on the neutral axis to calculate the tangential and normal vectors
         v1 = (xdp_y, ydp_y, zdp_y) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, 0, DSTEP2, DSTEP3)
         v2 = (xdm_y, ydm_y, zdm_y) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, 0, -DSTEP2, -DSTEP3)
+
         v3 = (xdp_x, ydp_x, zdp_x) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, DSTEP1, 0, 0)
         v4 = (xdm_x, ydm_x, zdm_x) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, -DSTEP1, 0, 0)
-
+        
         # Absolute-frame panel endpoint positions for time t
-        afx = x_neut + point_vectors(v1,v2,v3,v4)[1]*bfz
-        afy = y_neut + point_vectors(v1,v2,v3,v4)[2]*bfz
-        afz = z_neut + point_vectors(v1,v2,v3,v4)[3]*bfz
+        afx = x_neut + point_vectors(Nc, Ns, v1,v2,v3,v4)[0]*bfz
+        afy = y_neut + point_vectors(Nc, Ns, v1,v2,v3,v4)[1]*bfz
+        afz = z_neut + point_vectors(Nc, Ns, v1,v2,v3,v4)[2]*bfz
 
         # Absolute-frame panel midpoint positions
         x_mid = (afx[1:,:-1]+afx[:-1,:-1])/2
@@ -448,9 +446,9 @@ class Body(object):
         # They should be shifted inside or outside of the boundary depending on the dirichlet or neumann condition
         # Shifting surface collocation points some percent of the height from the neutral axis
         # Normal vectors point outward but positive S is inward, so the shift must be subtracted from the panel midpoints
-        afx_col = x_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_mid)
-        afy_col = y_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_mid)
-        afz_col = z_mid - self.S*panel_vectors(afx, afz)[3]*np.absolute(bfz_mid)
+        afx_col = x_mid - self.S*panel_vectors(bfx, bfy, bfz, Ns, Nc)[0]*np.absolute(bfz_col)
+        afy_col = y_mid - self.S*panel_vectors(bfy, bfy, bfz, Ns, Nc)[1]*np.absolute(bfz_col)
+        afz_col = z_mid - self.S*panel_vectors(bfz, bfy, bfz, Ns, Nc)[2]*np.absolute(bfz_col)
 
         self.AF.x = afx
         self.AF.y = afy
@@ -486,7 +484,7 @@ class Body(object):
         self.AF.x_col = self.AF.x_mid[0,:] - self.S*panel_vectors(self.AF.x, self.AF.z)[2]*np.absolute(self.BF.z_col)
         self.AF.z_col = self.AF.z_mid[0,:] - self.S*panel_vectors(self.AF.x, self.AF.z)[3]*np.absolute(self.BF.z_col)
 
-    def surface_kinematics(self, DSTEP, TSTEP, THETA_MINUS, THETA_PLUS, HEAVE_MINUS, HEAVE_PLUS, DEL_T, T, i):
+    def surface_kinematics(self, DSTEP1, DSTEP2, DSTEP3, TSTEP, THETA_MINUS, THETA_PLUS, HEAVE_MINUS, HEAVE_PLUS, DEL_T, T, i):
         """Calculates the body-frame surface velocities of body panels.
 
         Also finds the body panel source strengths based on these surface
@@ -503,41 +501,57 @@ class Body(object):
         if i == 0:
 
             x_col = self.BF.x_col
+            y_col = self.BF.y_col
             z_col = self.BF.z_col
 
             # Panel midpoint velocity calculations
             # Calculating the surface positions at tplus(tp) and tminus(tm)
-            (xtpneut, ztpneut) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, 0)
-            (xtpdp, ztpdp) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, DSTEP)
-            (xtpdm, ztpdm) = self.neutral_axis(x_col, T, THETA_PLUS, HEAVE_PLUS, -DSTEP)
-            (xtmneut, ztmneut) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, 0)
-            (xtmdp, ztmdp) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, DSTEP)
-            (xtmdm, ztmdm) = self.neutral_axis(x_col, T, THETA_MINUS, HEAVE_MINUS, -DSTEP)
+            (xtpneut, ytpneut, ztpneut) = self.neutral_plane(x_col, y_col, T, THETA_PLUS, HEAVE_PLUS, 0, 0, 0)
+            
+            (xtpdp_y, ytpdp_y, ztpdp_y) = self.neutral_plane(x_col, y_col, T, THETA_PLUS, HEAVE_PLUS, 0, DSTEP2, DSTEP3)
+            (xtpdp_x, ytpdp_x, ztpdp_x) = self.neutral_plane(x_col, y_col, T, THETA_PLUS, HEAVE_PLUS, DSTEP1, 0, 0)
+            
+            (xtpdm_y, ytpdm_y, ztpdm_y) = self.neutral_plane(x_col, y_col, T, THETA_PLUS, HEAVE_PLUS, 0, -DSTEP2, -DSTEP3)
+            (xtpdm_x, ytpdm_x, ztpdm_x) = self.neutral_plane(x_col, y_col, T, THETA_PLUS, HEAVE_PLUS, -DSTEP1, 0, 0)
+            
+            (xtmneut, ytmneut, ztmneut) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, 0, 0, 0)
+            
+            (xtmdp_y, ytmdp_y, ztmdp_y) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, 0, DSTEP2, DSTEP3)
+            (xtmdp_x, ytmdp_x, ztmdp_x) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, DSTEP1, 0, 0)
+            
+            (xtmdm_y, ytmdm_y, ztmdm_y) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, 0, -DSTEP2, -DSTEP3)
+            (xtmdm_x, ytmdm_x, ztmdm_x) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, -DSTEP1, 0, 0)
 
             # Displaced airfoil's panel midpoints for times tplus(tp) and tminus(tm)
-            xctp = xtpneut + point_vectors(xtpdp, xtpdm, ztpdp, ztpdm)[2]*z_col
-            xctm = xtmneut + point_vectors(xtmdp, xtmdm, ztmdp, ztmdm)[2]*z_col
+            xctp = xtpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[0]*z_col
+            xctm = xtmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[0]*z_col
 
-            zctp = ztpneut + point_vectors(xtpdp, xtpdm, ztpdp, ztpdm)[3]*z_col
-            zctm = ztmneut + point_vectors(xtmdp, xtmdm, ztmdp, ztmdm)[3]*z_col
+            yctp = ytpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[1]*z_col
+            yctm = ytmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[1]*z_col
+            
+            zctp = ztpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[2]*z_col
+            zctm = ztmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[2]*z_col
 
             # Velocity calculations on the surface panel midpoints
             self.vx = (xctp - xctm)/(2*TSTEP)
+            self.vy = (yctp - yctm)/(2*TSTEP)
             self.vz = (zctp - zctm)/(2*TSTEP)
 
         elif i == 1:
             # First-order backwards differencing of body collocation point positions
             self.vx = (self.AF.x_mid[0,:]-self.AF.x_mid[1,:])/DEL_T - self.V0
+            self.vy = (self.AF.y_mid[0,:]-self.AF.y_mid[1,:])/DEL_T
             self.vz = (self.AF.z_mid[0,:]-self.AF.z_mid[1,:])/DEL_T
 
         else:
             # Second-order backwards differencing of body collocation point positions
             self.vx = (3*self.AF.x_mid[0,:]-4*self.AF.x_mid[1,:]+self.AF.x_mid[2,:])/(2*DEL_T) - self.V0
+            self.vy = (3*self.AF.y_mid[0,:]-4*self.AF.y_mid[1,:]+self.AF.y_mid[2,:])/(2*DEL_T)
             self.vz = (3*self.AF.z_mid[0,:]-4*self.AF.z_mid[1,:]+self.AF.z_mid[2,:])/(2*DEL_T)
 
-        # Body source strengths with normal vector pointing outward (overall sigma pointing outward)
-        (nx,nz) = panel_vectors(self.AF.x,self.AF.z)[2:4]
-        self.sigma = nx*(self.V0 + self.vx) + nz*self.vz
+#        # Body source strengths with normal vector pointing outward (overall sigma pointing outward)
+#        (nx,nz) = panel_vectors(self.AF.x,self.AF.z)[2:4]
+#        self.sigma = nx*(self.V0 + self.vx) + nz*self.vz
 
     def pressure(self, RHO, DEL_T, i):
         """Calculates the pressure distribution along the body's surface.
