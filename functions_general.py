@@ -4,22 +4,33 @@ import numpy as np
 
 #from swimmer_class import Swimmer
 
-    # x,z components of each panel's tangential and normal vectors
-def panel_vectors(x,z):
-    lpanel = np.sqrt((x[1:]-x[:-1])**2 + (z[1:]-z[:-1])**2)
-    tx = (x[1:]-x[:-1])/lpanel
-    tz = (z[1:]-z[:-1])/lpanel
-    nx = -tz
-    nz = tx
-    return (tx,tz,nx,nz,lpanel)
+# Ns is the numper of panels in spanwise direction
+# Nc is the number of panels in chordwise direction
+# TODO: panel_vectors now need a second tangential vector and area of panel
+def panel_vectors(x,y,z,Nc,Ns):
+
+    # each column stores another spanwise cros sectional panel lengths
+    lpanel = np.sqrt((x[1:,0:Ns]-x[:-1,0:Ns])**2 + (y[1:,0:Ns]-y[:-1,0:Ns])**2 + (z[1:,0:Ns]-z[:-1,0:Ns])**2)
+    tx = (x[1:,0:Ns]-x[:-1,0:Ns])/lpanel
+    ty = (y[0:Nc,1:]-y[0:Nc,:-1])/lpanel.T
+    tz = (z[1:,0:Ns]-z[:-1,0:Ns])/lpanel
+    #nx = -tz
+    #nz = tx
+    return (tx,ty,tz,nx,ny,nz,lpanel)
 
     # x,z components of each midpoint's/collocation point's tangential and normal vectors
-def point_vectors(xdp,xdm,zdp,zdm):
-    tx = (xdp-xdm)/np.sqrt((xdp-xdm)**2 + (zdp-zdm)**2)
-    tz = (zdp-zdm)/np.sqrt((xdp-xdm)**2 + (zdp-zdm)**2)
-    nx = -tz
-    nz = tx
-    return(tx,tz,nx,nz)
+# TODO: point_vectors now need a second tangential vector
+def point_vectors(v1,v2,v3,v4):
+    vy = v1 - v2
+    vx = v3 - v4        
+    vn = np.cross(vx,vy) # normal vectors at every panel corner points
+    
+    #components of normal vectors
+    vn_x = vn(1)/np.linalg.norm(vn)
+    vn_y = vn(2)/np.linalg.norm(vn)
+    vn_z = vn(3)/np.linalg.norm(vn)  
+    
+    return(vn_x, vn_y, vn_z)
 
 def archive(array, axis=0):
     """

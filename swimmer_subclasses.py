@@ -374,14 +374,14 @@ class Body(object):
 
         return Body(N_CHORD, N_SPAN, S, BodyFrameCoordinates, MotionParameters)
 
-# TODO: Change neutral_axis to neutral_plane
-    def neutral_axis(self, x, y, T, THETA, HEAVE, DSTEP=0, TSTEP=0):
-        """Finds a body's neutral axis for a given time.
+#   TODO: Change neutral_axis to neutral_plane
+    def neutral_plane(self, x, y, T, THETA, HEAVE, DSTEP1=0, DSTEP2=0, DSTEP3=0):
+        """Finds a body's neutral plane for a given time.
 
-        The neutral axis is the axis which coincides with the chord line and
-        divides the symmetric airfoil into two.
+        The neutral plane is the plane which coincides with the z=0 plane and
+        divides the symmetric body into two. CURRENTLY PITCHING MOTION ONLY.
 
-        The axis that it finds is in an absolute frame of reference.
+        The plane that it finds is in an absolute frame of reference.
 
         Args:
             x: An array of body-frame x-coordinates to use as reference points.
@@ -403,14 +403,16 @@ class Body(object):
         Z0 = self.MP.Z0
         V0 = self.MP.V0
 
-        x_neut = X0 + (x+DSTEP)*np.cos(THETA) + V0*T
-        y_neut = Y0 + (y +DSTEP)
-        z_neut = Z0 + (x+DSTEP)*np.sin(THETA) + HEAVE
+        ##Neutral plane positions(x_neut y_neut z_neut) are going to be 
+        ##set according to the type of the motion.    
+        x_neut = X0 + (x+DSTEP1)*np.cos(THETA) + V0*T
+        y_neut = Y0 + y+DSTEP2
+        z_neut = Z0 + (y+DSTEP3)*np.sin(THETA) + HEAVE
         
         return(x_neut, y_neut, z_neut)
 
 #   TODO: Update panel_positions to account for 3D objects
-    def panel_positions(self, DSTEP, T, THETA, HEAVE):
+    def panel_positions(self, DSTEP1, DSTEP2, DSTEP3, T, THETA, HEAVE):
         """Updates all the absolute-frame coordinates of the body.
 
         Args:
@@ -424,37 +426,47 @@ class Body(object):
         bfz_mid = self.BF.z_mid
         V0 = self.V0 # Used only for x_le
 
-        (x_neut, y_neut, z_neut) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE)
+        (x_neut, y_neut, z_neut) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE)
 
         # Infinitesimal differences on the neutral axis to calculate the tangential and normal vectors
-        (xdp_s, ydp_s, zdp_s) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE, DSTEP)
-        (xdm_s, ydm_s, zdm_s) = self.neutral_axis(bfx, bfy, T, THETA, HEAVE, -DSTEP)
+        v1 = (xdp_y, ydp_y, zdp_y) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, 0, DSTEP2, DSTEP3)
+        v2 = (xdm_y, ydm_y, zdm_y) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, 0, -DSTEP2, -DSTEP3)
+        v3 = (xdp_x, ydp_x, zdp_x) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, DSTEP1, 0, 0)
+        v4 = (xdm_x, ydm_x, zdm_x) = self.neutral_plane(bfx, bfy, T, THETA, HEAVE, -DSTEP1, 0, 0)
 
         # Absolute-frame panel endpoint positions for time t
-        afx = x_neut + point_vectors(xdp_s, xdm_s, zdp_s, zdm_s)[2]*bfz
-        afz = z_neut + point_vectors(xdp_s, xdm_s, zdp_s, zdm_s)[3]*bfz
+        afx = x_neut + point_vectors(v1,v2,v3,v4)[1]*bfz
+        afy = y_neut + point_vectors(v1,v2,v3,v4)[2]*bfz
+        afz = z_neut + point_vectors(v1,v2,v3,v4)[3]*bfz
 
         # Absolute-frame panel midpoint positions
-        x_mid = (afx[:-1]+afx[1:])/2
-        z_mid = (afz[:-1]+afz[1:])/2
+        x_mid = (afx[1:,:-1]+afx[:-1,:-1])/2
+        y_mid = (afy[1:,:-1]+afy[:-1,:-1])/2
+        z_mid = (afz[1:,:-1]+afz[:-1,:-1])/2
 
         # Collocation points are the points where impermeable boundary condition is forced
         # They should be shifted inside or outside of the boundary depending on the dirichlet or neumann condition
         # Shifting surface collocation points some percent of the height from the neutral axis
         # Normal vectors point outward but positive S is inward, so the shift must be subtracted from the panel midpoints
         afx_col = x_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_mid)
+        afy_col = y_mid - self.S*panel_vectors(afx, afz)[2]*np.absolute(bfz_mid)
         afz_col = z_mid - self.S*panel_vectors(afx, afz)[3]*np.absolute(bfz_mid)
 
         self.AF.x = afx
+        self.AF.y = afy
         self.AF.z = afz
         self.AF.x_col = afx_col
+        self.AF.y_col = afy_col
         self.AF.z_col = afz_col
-        self.AF.x_mid[0,:] = x_mid
-        self.AF.z_mid[0,:] = z_mid
+        self.AF.x_mid = x_mid
+        self.AF.y_mid = y_mid
+        self.AF.z_mid = z_mid
         self.AF.x_neut = x_neut
+        self.AF.y_neut = y_neut
         self.AF.z_neut = z_neut
         # Location of leading edge (currently pitching motion only)
         self.AF.x_le = V0*T
+        self.AF.y_le = 0
         self.AF.z_le = HEAVE
         
     def fsi_panel_positions(self, FSI, T, THETA, HEAVE):
@@ -560,7 +572,8 @@ class Body(object):
         self.cp = self.p / (0.5*RHO*self.V0**2)
 
     def force(self, THETA, RHO, V0, C, B, i):
-        """Calculates drag and lift forces acting on the body.
+        """Calculates drag, lift, and thrust forces acting on the body. 
+        Calculates input power.
 
         Args:
             i: Time step number.
@@ -571,7 +584,6 @@ class Body(object):
         delFx = -self.p * lpanel * B * nx
         delFz = -self.p * lpanel * B * nz
         delF = np.array([delFx, delFz])
-#        delF = -np.multiply(np.kron(self.p, np.array([1, 1])), np.array([nx, nz]).T)
         delP = np.sum(-delF * np.array([self.vx.T, self.vz.T]), 1)
 
         force = np.sum(delF,1)
@@ -583,9 +595,3 @@ class Body(object):
         self.Cl = lift /(0.5 * RHO * V0**2 * C *B)
         self.Ct = thrust / (0.5 * RHO * V0**2 * C *B)
         self.Cpow = power /  (0.5 * RHO * V0**3 * C *B)
-        
-#        Body.drag[i-1] = np.dot(self.p[i-1,:]*lpanel, np.reshape(tx,(self.N,1)))\
-#                      + np.dot(self.p[i-1,:]*lpanel, np.reshape(-tz,(self.N,1)))
-#
-#        self.lift[i-1] = np.dot(self.p[i-1,:]*lpanel, np.reshape(-nz,(self.N,1)))\
-#                      + np.dot(self.p[i-1,:]*lpanel, np.reshape(nx,(self.N,1)))
