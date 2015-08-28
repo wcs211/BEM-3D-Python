@@ -1,6 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from functions_general import point_vectors, panel_vectors
 import numpy as np
 
 # Global figure variable
@@ -195,7 +196,11 @@ def body_plot(Swimmers, SW_PLOT_FIG):
         plt.tick_params(labelsize=28)
             
         for Swim in Swimmers:
+            Nc = Swim.Body.BF.x.shape[0]
+            Ns = Swim.Body.BF.x.shape[1]
+            (vn_x,vn_y,vn_z) = panel_vectors(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, Ns, Nc)
             ax.plot_surface(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, rstride=1, cstride=1, cmap='hot', linewidth=0, antialiased=False)
+            ax.quiver(Swim.Body.AF.x_mid[::5,::5], Swim.Body.AF.y_mid[::5,::5], Swim.Body.AF.z_mid[::5,::5], vn_x[::5,::5], vn_y[::5,::5], vn_z[::5,::5], length=0.1)
     
         # Determine if the output directory exists. If not, create the directory.
         if not os.path.exists('./movies'):

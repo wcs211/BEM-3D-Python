@@ -1,10 +1,10 @@
 *.pyc
-./data
-./movies
+data/
+movies/
 log.*
 err.*
 *.out
 *.err
 *.pbs
 *.csv
-./tests
+tests/
