@@ -11,7 +11,7 @@ P = PARAMETERS = {
 , 'SW_SV_L_CYCLE':      True
 , 'SW_SV_FORCES':       True
 , 'SAVE_EVERY':         1
-, 'OUTPUT_DIR':         '/home/wcs211/BEM-3D-Python/data'
+, 'OUTPUT_DIR':         '/home/chris/BEM-3D-Python/data'
 , 'START_FROM':         'zeroTime'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -97,6 +97,7 @@ P = PARAMETERS = {
 , 'SW_INTERP_MTD':      True
 , 'SW_CNST_THK_BM':     True
 , 'SW_RAMP':            True
+, 'SW_PLOT_FIG':        True
 }
 
 ##### The Following parameters are based on perviously declared variables #####
