@@ -15,14 +15,15 @@ class Edge(object):
         mu: Doublet strength of the edge panel.
         gamma: Circulation at the edge panel endpoints.
     """
-    def __init__(self, CE):
+    def __init__(self, CE, N_SPAN):
         """Inits Edge with all necessary parameters."""
         self.N = 1
         self.CE = CE
-        self.x = np.zeros(self.N+1)
-        self.z = np.zeros(self.N+1)
-        self.mu = np.zeros(self.N)
-        self.gamma = np.zeros(self.N+1)
+        self.x = np.zeros((self.N+1,N_SPAN))
+        self.y = np.zeros((self.N+1,N_SPAN))
+        self.z = np.zeros((self.N+1,N_SPAN))
+        self.mu = np.zeros((self.N, N_SPAN))
+        self.gamma = np.zeros((self.N+1,N_SPAN))
 
 class Wake(object):
     """A chain of wake doublet panels.
@@ -33,13 +34,14 @@ class Wake(object):
         mu: Doublet strengths of the wake panels.
         gamma: Circulations at the wake panel endpoints.
     """
-    def __init__(self, N):
+    def __init__(self, N, N_SPAN):
         """Inits Wake with all necessary parameters."""
         self.N = N
-        self.x = np.zeros(N+1)
-        self.z = np.zeros(N+1)
-        self.mu = np.zeros(N)
-        self.gamma = np.zeros(N+1)
+        self.x = np.zeros((N+1, N_SPAN))
+        self.y = np.zeros((N+1, N_SPAN))
+        self.z = np.zeros((N+1, N_SPAN))
+        self.mu = np.zeros((N, N_SPAN))
+        self.gamma = np.zeros((N+1, N_SPAN))
 
 class Body(object):
     """An arrangement of source/doublet panels in the shape of a swimming body.
@@ -402,7 +404,7 @@ class Body(object):
         
         x_neut = X0 + (x+DSTEP1)*np.cos(THETA) + V0*T
         y_neut = Y0 + y+DSTEP2
-        z_neut = Z0 + (y+DSTEP3)*np.sin(THETA) + HEAVE
+        z_neut = Z0 + (x+DSTEP3)*np.sin(THETA) + HEAVE
 
         return(x_neut, y_neut, z_neut)
         
@@ -415,6 +417,7 @@ class Body(object):
             THETA: Current pitching angle.
 
         """
+#        Nc = int(0.5*(self.BF.x.shape[0]-1))
         Nc = self.BF.x.shape[0]
         Ns = self.BF.x.shape[1]
         bfx = self.BF.x
@@ -499,10 +502,11 @@ class Body(object):
             THETA_PLUS: Pitching angle plus a small time difference (TSTEP)
         """
         if i == 0:
-
-            x_col = self.BF.x_col
-            y_col = self.BF.y_col
-            z_col = self.BF.z_col
+            Nc = self.BF.x.shape[0]-1
+            Ns = self.BF.x.shape[1]-1
+            x_col = self.BF.x_mid
+            y_col = self.BF.y_mid
+            z_col = self.BF.z_mid
 
             # Panel midpoint velocity calculations
             # Calculating the surface positions at tplus(tp) and tminus(tm)
@@ -523,14 +527,14 @@ class Body(object):
             (xtmdm_x, ytmdm_x, ztmdm_x) = self.neutral_plane(x_col, y_col, T, THETA_MINUS, HEAVE_MINUS, -DSTEP1, 0, 0)
 
             # Displaced airfoil's panel midpoints for times tplus(tp) and tminus(tm)
-            xctp = xtpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[0]*z_col
-            xctm = xtmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[0]*z_col
+            xctp = xtpneut + point_vectors(Nc, Ns, (xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[0]*z_col
+            xctm = xtmneut + point_vectors(Nc, Ns, (xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[0]*z_col
 
-            yctp = ytpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[1]*z_col
-            yctm = ytmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[1]*z_col
+            yctp = ytpneut + point_vectors(Nc, Ns, (xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[1]*z_col
+            yctm = ytmneut + point_vectors(Nc, Ns, (xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[1]*z_col
             
-            zctp = ztpneut + point_vectors((xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[2]*z_col
-            zctm = ztmneut + point_vectors((xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[2]*z_col
+            zctp = ztpneut + point_vectors(Nc, Ns, (xtpdp_y, ytpdp_y, ztpdp_y), (xtpdm_y, ytpdm_y, ztpdm_y), (xtpdp_x, ytpdp_x, ztpdp_x), (xtpdm_x, ytpdm_x, ztpdm_x))[2]*z_col
+            zctm = ztmneut + point_vectors(Nc, Ns, (xtmdp_y, ytmdp_y, ztmdp_y), (xtmdm_y, ytmdm_y, ztmdm_y), (xtmdp_x, ytmdp_x, ztmdp_x), (xtmdm_x, ytmdm_x, ztmdm_x))[2]*z_col
 
             # Velocity calculations on the surface panel midpoints
             self.vx = (xctp - xctm)/(2*TSTEP)

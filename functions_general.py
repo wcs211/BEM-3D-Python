@@ -20,14 +20,14 @@ def panel_vectors(x,y,z,Ns,Nc):
     vn_y = np.zeros((Nc-1,Ns-1))
     vn_z = np.zeros((Nc-1,Ns-1))
     
-    for i in np.arange(Ns-1):
-        for j in np.arange(Nc-1):
+    for i in xrange(Ns-1):
+        for j in xrange(Nc-1):
         
-            v_n = np.cross(diag1[:,i,j],diag2[:,i,j])
+            v_n = np.cross(diag1[:,j,i],diag2[:,j,i])
             #full lengths of each normal vector component
-            vn_x[i,j] = v_n[0]
-            vn_x[i,j] = v_n[1]
-            vn_x[i,j] = v_n[2]
+            vn_x[j,i] = v_n[0]
+            vn_y[j,i] = v_n[1]
+            vn_z[j,i] = v_n[2]
 
     vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
     vn_y_unit = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
@@ -45,14 +45,14 @@ def point_vectors(Nc, Ns, v1,v2,v3,v4):
     vn_y = np.zeros((Nc,Ns))
     vn_z = np.zeros((Nc,Ns))
 
-    for i in np.arange(Ns):
-        for j in np.arange(Nc):
+    for i in xrange(Ns):
+        for j in xrange(Nc):
         
-            v_n = np.cross(vx[:,i,j],vy[:,i,j])
+            v_n = np.cross(vx[:,j,i],vy[:,j,i])
             #full lengths of each normal vector component
-            vn_x[i,j] = v_n[0]
-            vn_x[i,j] = v_n[1]
-            vn_x[i,j] = v_n[2]
+            vn_x[j,i] = v_n[0]
+            vn_y[j,i] = v_n[1]
+            vn_z[j,i] = v_n[2]
    
    
     vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)

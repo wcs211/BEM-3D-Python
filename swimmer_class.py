@@ -42,8 +42,8 @@ class Swimmer(object):
         if GeoParameters.SW_GEOMETRY == 'TD':
             self.Body = Body.tear_drop(GeoParameters, MotionParameters)
 
-        self.Edge = Edge(self.CE)
-        self.Wake = Wake(N_WAKE)
+        self.Edge = Edge(self.CE, GeoParameters.N_SPAN)
+        self.Wake = Wake(N_WAKE, GeoParameters.N_SPAN)
         
 #        self.Cf = np.zeros(N_WAKE+1)
 #        self.Cl = np.zeros(N_WAKE+1)
@@ -67,17 +67,22 @@ class Swimmer(object):
         Body = self.Body
         Edge = self.Edge
 
-        Edge.x[0] = Body.AF.x[0]
-        Edge.z[0] = Body.AF.z[0]
+        Edge.x[0,:] = Body.AF.x[0,:]
+        Edge.y[0,:] = Body.AF.y[0,:]
+        Edge.z[0,:] = Body.AF.z[0,:]
         
-        x_0 = 0.5 * (Body.AF.x[1] + Body.AF.x[-2])
-        z_0 = 0.5 * (Body.AF.z[1] + Body.AF.z[-2])
-        vect_x = Body.AF.x[0] - x_0
-        vect_z = Body.AF.z[0] - z_0
-        length = np.sqrt(vect_x**2 + vect_z**2)
+        x_0 = 0.5 * (Body.AF.x[1,:] + Body.AF.x[-2,:])
+        y_0 = 0.5 * (Body.AF.y[1,:] + Body.AF.y[-2,:])
+        z_0 = 0.5 * (Body.AF.z[1,:] + Body.AF.z[-2,:])
+        vect_x = Body.AF.x[0,:] - x_0
+        vect_y = Body.AF.y[0,:] - y_0
+        vect_z = Body.AF.z[0,:] - z_0
+        length = np.sqrt(vect_x**2 + vect_y**2 + vect_z**2)
         tan_x = -vect_x / length
+        tan_y = -vect_y / length
         tan_z = -vect_z / length
         Edge.x[1] = Body.AF.x[0] + Edge.CE*tan_x*Body.V0*DEL_T
+        Edge.y[1] = Body.AF.y[0] + Edge.CE*tan_y*Body.V0*DEL_T
         Edge.z[1] = Body.AF.z[0] + Edge.CE*tan_z*Body.V0*DEL_T
 
     def wake_shed(self, DEL_T, i):
@@ -99,21 +104,27 @@ class Swimmer(object):
         # Initialize wake coordinates when i==1
         if i == 1:
 
-            Wake.x[0] = Edge.x[-1]
-            Wake.z[0] = Edge.z[-1]
+            Wake.x[0,:] = Edge.x[-1,:]
+            Wake.y[0,:] = Edge.y[-1,:]
+            Wake.z[0,:] = Edge.z[-1,:]
 
-            Wake.x[1:] = Wake.x[0] + np.arange(1,np.size(Wake.x))*(-V0)*DEL_T
-            Wake.z[1:] = Wake.z[0]
+#            Wake.x[1:,:] = Wake.x[0,:] + np.arange(1,np.size(Wake.x))*(-V0)*DEL_T
+#            Wake.y[1:,:] = Wake.y[0,:] + np.arange(1,np.size(Wake.y))*(-V0)*DEL_T
+            Wake.x[1:,:] = Wake.x[0,:] + np.arange(1,Wake.x.shape[1]+1)*(-V0)*DEL_T
+            Wake.y[1:,:] = Wake.y[0,:]
+            Wake.z[1:,:] = Wake.z[0,:]
 
         else:
             archive(Wake.x)
+            archive(Wake.y)
             archive(Wake.z)
             archive(Wake.mu)
 
-            Wake.x[0] = Edge.x[-1]
-            Wake.z[0] = Edge.z[-1]
-            Wake.mu[0] = Edge.mu
+            Wake.x[0,:] = Edge.x[-1,:]
+            Wake.y[0,:] = Edge.y[-1,:]
+            Wake.z[0,:] = Edge.z[-1,:]
+            Wake.mu[0,:] = Edge.mu
 
-            Wake.gamma[0] = -Wake.mu[0]
-            Wake.gamma[1:-1] = Wake.mu[:-1]-Wake.mu[1:]
-            Wake.gamma[-1] = Wake.mu[-1]
+            Wake.gamma[0,:] = -Wake.mu[0,:]
+            Wake.gamma[1:-1,:] = Wake.mu[:-1]-Wake.mu[1:,:]
+            Wake.gamma[-1,:] = Wake.mu[-1,:]
