@@ -24,7 +24,6 @@ from functions_general import archive, absoluteToBody, simulation_startup
 fpectl.turnon_sigfpe()
 np.seterr(all='raise')
 
-po().prog_title('1.0.0')
 DIO = DataIO(P)
 start_time = time.time()
 

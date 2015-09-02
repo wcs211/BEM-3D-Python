@@ -15,7 +15,6 @@ from terminal_output import print_output as po
 from functions_general import simulation_startup, archive
 import functions_graphics as graph
 
-po().prog_title('1.0.082515a')
 DIO = DataIO(P)
 start_time = time.time()
 
@@ -48,6 +47,7 @@ for i in xrange(START_COUNTER, COUNTER):
             archive(Swim.Body.AF.x_mid)
             archive(Swim.Body.AF.z_mid)
         graph.body_plot(Swimmers, P['SW_PLOT_FIG'])
+#        graph.body_wake_plot(Swimmers, P['SW_PLOT_FIG'], i)
 #        graph.plot_n_go(Swimmers, P['V0'], P['T'][i], P['HEAVE'][i], i, P['SW_PLOT_FIG'])
         DIO.write_data(P, i, DEL_T, SwiP, GeoP, MotP, Swimmers)
 
@@ -70,7 +70,6 @@ for i in xrange(START_COUNTER, COUNTER):
             archive(Swim.Body.AF.x_mid)
             archive(Swim.Body.AF.z_mid)
         graph.body_plot(Swimmers, P['SW_PLOT_FIG'])
+#        graph.body_wake_plot(Swimmers, P['SW_PLOT_FIG'], i)
 #        graph.plot_n_go(Swimmers, P['V0'], P['T'][i], P['HEAVE'][i], i, P['SW_PLOT_FIG'])
         DIO.write_data(P, i, DEL_T, SwiP, GeoP, MotP, Swimmers)
-
-graph.basic_xyz(Swimmers[0].Body.BF.x,Swimmers[0].Body.BF.y,Swimmers[0].Body.BF.z)

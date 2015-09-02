@@ -3,14 +3,75 @@
 import numpy as np
 from functions_general import panel_vectors, transformation
 
-def inf_sourcepanel(xp1, xp2, zp):
-    """Returns a matrix of source panel influence coefficients."""
-    return((xp1 * np.log(xp1**2 + zp**2) - xp2 * np.log(xp2**2 + zp**2) \
-          + 2*zp*(np.arctan2(zp,xp2) - np.arctan2(zp,xp1)))/(4*np.pi))
+def distance(xp, yp):
+    """"Calculates the distance between two points"""
+    xr = np.roll(xp,-1)
+    yr = np.roll(yp, -1)
+    return(np.sqrt((xr - xp)**2 + (yr - yp)**2))
+    
+def slope(xp, yp):
+    """"Calculates the slope between two points"""
+    xr = np.roll(xp,-1)
+    yr = np.roll(yp, -1)
+    return((yr - yp) / (xr - xp))
+    
+def radius(xp, yp, x, y, z):
+    """"Calculates the radius between a panel point and an influencing point"""
+    return(np.sqrt((x - xp)**2 + (y - yp)**2 + z**2))
+    
+def e_factor(xp, x, z):
+    """Calculates the e factor (Katz and Plotkin eq. 10.93)"""
+    return((x - xp)**2 + z**2)
 
-def inf_doubletpanel(xp1, xp2, zp):
+def h_factor(xp, yp, x, y):
+    """Calculates the h factor (Katz and Plotkin eq. 10.94)"""
+    return((x - xp) * (y - yp))
+    
+def f1(xp, yp, x, y, d, r):
+    """Calculates the first half of Katz and Plokin eq. 10.89"""
+    xr = np.roll(xp,-1)
+    yr = np.roll(yp, -1)
+    rr = np.roll(r, -1)
+    numerator = (x - xp) * (yr - yp) - (y - yp) * (xr - xp)
+    log = np.log((r + rr + d) / (r + rr - d))
+    
+    return(np.sum(numerator / d * log))
+    
+def f2(z, m, r, e, h):
+    """Calculates the second half of Katz and Plokin eq. 10.89 and all of eq. 10.105"""
+    rr = np.roll(r, -1)
+    er = np.roll(e, -1)
+    hr = np.roll(h, -1)
+    
+    return (np.sum(np.arctan2((m * e - h) / (z * r)) \
+                - np.arctan2((m * er - hr) / z * rr)))
+    
+
+def inf_sourcepanel(xp1, xp2, xp3, xp4, yp1, yp2, yp3, yp4, x, y, z):
+    """Returns a matrix of source panel influence coefficients."""
+    xp = np.array([xp1, xp2, xp3, xp4])
+    yp = np.array([yp1, yp2, yp3, yp4])
+    
+    d = distance(xp, yp)
+    m = slope(xp, yp)
+    r = radius(xp, yp, x, y, z)
+    e = e_factor(xp, x, z)
+    h = h_factor(xp, yp, x, y)
+    
+    return (1. / (4. * np.pi) * (f1(xp, yp, x, y, d, r) \
+                                     - np.abs(z) * f2(z, m, r, e, h)))
+
+def inf_doubletpanel(xp1, xp2, xp3, xp4, yp1, yp2, yp3, yp4, x, y, z):
     """Returns a matrix of doublet panel influence coefficients."""
-    return(-(np.arctan2(zp,xp2) - np.arctan2(zp,xp1))/(2*np.pi))
+    xp = np.array([xp1, xp2, xp3, xp4])
+    yp = np.array([yp1, yp2, yp3, yp4])
+    
+    m = slope(xp, yp)
+    r = radius(xp, yp, x, y, z)
+    e = e_factor(xp, x, z)
+    h = h_factor(xp, yp, x, y)
+    
+    return (1. / (4. * np.pi) * f2(z, m, r, e, h))
 
 def quilt(Swimmers, influence_type, NT, NI, i):
     """Constructs a full transformation matrix that includes all Swimmers.

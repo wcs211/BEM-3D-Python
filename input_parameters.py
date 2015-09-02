@@ -11,15 +11,15 @@ P = PARAMETERS = {
 , 'SW_SV_L_CYCLE':      True
 , 'SW_SV_FORCES':       True
 , 'SAVE_EVERY':         1
-, 'OUTPUT_DIR':         '/home/chris/BEM-3D-Python/data'
+, 'OUTPUT_DIR':         '/home/wcs211/BEM-3D-Python/data'
 , 'START_FROM':         'zeroTime'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Geometry Definition                                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 , 'SW_GEOMETRY':        'VDV'
-, 'N_CHORD':            61                  # Number of chordwise panels.
-, 'N_SPAN':             61                  # Number of spanwise panels.
+, 'N_CHORD':            31                  # Number of chordwise panels.
+, 'N_SPAN':             31                  # Number of spanwise panels.
 , 'C':                  1.0                 # Chord  length of rectangular body.
 , 'SPAN':               2.0                 # Span length of the body
 , 'C_B':                2.0                 # Body chord length.
@@ -34,7 +34,7 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Time-step and Misc. Parameters                                              #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-, 'N_STEP':             100                 # Number of time-steps per cycle
+, 'N_STEP':             50                  # Number of time-steps per cycle
 , 'N_CYC':              10                  # Number of cycles to simulate
 , 'N_LUMP':             2                   # Number of cycles of the wake panels that are not lumped into a single element.
 , 'DSTEP':              10**-5              # Displacement incremental time-step
@@ -133,6 +133,6 @@ P['T']           = [P['DEL_T'] * i for i in xrange(P['COUNTER'])]
 P['THETA']       = [P['THETA_MAX'] * np.sin(2 * np.pi * P['F'] * P['T'][i] + P['PHI']) for i in xrange(P['COUNTER'])]
 P['THETA_MINUS'] = [P['THETA_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP']) + P['PHI']) for i in xrange(P['COUNTER'])]
 P['THETA_PLUS']  = [P['THETA_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP']) + P['PHI']) for i in xrange(P['COUNTER'])]
-P['HEAVE']       = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * P['T'][i]) * np.tanh(3 * P['T'][i]) for i in xrange(P['COUNTER'])]
-P['HEAVE_MINUS'] = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP'])) * np.tanh(3 * (P['T'][i] - P['TSTEP'])) for i in xrange(P['COUNTER'])]
-P['HEAVE_PLUS']  = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP'])) * np.tanh(3 * (P['T'][i] + P['TSTEP'])) for i in xrange(P['COUNTER'])]
+P['HEAVE']       = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * P['T'][i]) for i in xrange(P['COUNTER'])]
+P['HEAVE_MINUS'] = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] - P['TSTEP'])) for i in xrange(P['COUNTER'])]
+P['HEAVE_PLUS']  = [P['HEAVE_MAX'] * np.sin(2 * np.pi * P['F'] * (P['T'][i] + P['TSTEP'])) for i in xrange(P['COUNTER'])]

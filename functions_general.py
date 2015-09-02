@@ -8,10 +8,12 @@ import numpy as np
 # Nc is the number of panels in chordwise direction
 # TODO: panel_vectors now need a second tangential vector and area of panel
 def panel_vectors(x,y,z,Ns,Nc):
-
+    # Calculating the normal unit vector
     # diagonal vectors associated to each panel
-    diag1 = (x[:-1,1:]-x[1:,:-1],y[:-1,1:]-y[1:,:-1],z[:-1,1:]-z[1:,:-1])
-    diag2 = (x[1:,1:]-x[:-1,:-1],y[1:,1:]-y[:-1,:-1],z[1:,1:]-z[:-1,:-1])
+    diag1 = (x[1:,:-1]-x[:-1,1:],y[:-1,1:]-y[1:,:-1],z[1:,:-1]-z[:-1,1:])
+    diag2 = (x[:-1,:-1]-x[1:,1:],y[1:,1:]-y[:-1,:-1],z[:-1,:-1]-z[1:,1:])
+#    diag1 = (x[:-1,1:]-x[1:,:-1],y[:-1,1:]-y[1:,:-1],z[:-1,1:]-z[1:,:-1])
+#    diag2 = (x[1:,1:]-x[:-1,:-1],y[1:,1:]-y[:-1,:-1],z[1:,1:]-z[:-1,:-1])
     
     diag1 = np.asarray(diag1)
     diag2 = np.asarray(diag2)
@@ -29,11 +31,31 @@ def panel_vectors(x,y,z,Ns,Nc):
             vn_y[j,i] = v_n[1]
             vn_z[j,i] = v_n[2]
 
-    vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
-    vn_y_unit = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
-    vn_z_unit = vn_z/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)    
+    nx = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    ny = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
+    nz = vn_z/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
 
-    return (vn_x_unit,vn_y_unit,vn_z_unit)
+    # Calculating the tangential unit vector in the span direction
+    xms = 0.5*(x[:-1,:] + x[1:,:])
+    yms = 0.5*(y[:-1,:] + y[1:,:])
+    zms = 0.5*(z[:-1,:] + z[1:,:])
+    
+    lps = np.sqrt((xms[:,1:] - xms[:,:-1])**2 + (yms[:,1:] - yms[:,:-1])**2 + (zms[:,1:] - zms[:,:-1])**2)
+    txs = (xms[:,1:] - xms[:,:-1]) / lps
+    tys = (yms[:,1:] - yms[:,:-1]) / lps
+    tzs = (zms[:,1:] - zms[:,:-1]) / lps
+    
+     # Calculating the tangential unit vector in the chord direction
+    xmc = 0.5*(x[:,:-1] + x[:,1:])
+    ymc = 0.5*(y[:,:-1] + y[:,1:])
+    zmc = 0.5*(z[:,:-1] + z[:,1:])
+    
+    lpc = np.sqrt((xmc[1:,:] - xmc[:-1,:])**2 + (ymc[1:,:] - ymc[:-1,:])**2 + (zmc[1:,:] - zmc[:-1,:])**2)
+    txc = (xmc[1:,:] - xmc[:-1,:]) / lpc
+    tyc = (ymc[1:,:] - ymc[:-1,:]) / lpc
+    tzc = (zmc[1:,:] - zmc[:-1,:]) / lpc
+
+    return (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc, lps, lpc)
 
     # x,z components of each midpoint's/collocation point's tangential and normal vectors
 # TODO: point_vectors now need a second tangential vector
