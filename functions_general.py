@@ -84,7 +84,7 @@ def point_vectors(Nc, Ns, v1,v2,v3,v4):
     return (vn_x_unit,vn_y_unit,vn_z_unit)        
 
 
-def archive(array, axis=0):
+def archive(array, axis=3):
     """
     Shifts array values along an axis (row-wise by default).
 
@@ -101,25 +101,35 @@ def archive(array, axis=0):
             array[1:,:] = array[:-1,:]
         else:
             array[:,1:] = array[:,:-1]
+    elif len(np.shape(array)) == 3:
+        if axis == 0:
+            array[1:,:,:] = array[:-1,:,:]
+        elif axis == 1:
+            array[:,1:,:] = array[:,:-1,:]
+        else:
+            array[:,:,1:] = array[:,:,:-1]
+        
 
 # Velocity and velocity potential equations are defined in panel coordinates so a transformation should be done
 # Each row of xp1/xp2/zp is a target, and each column is an influence
 # NI is N influences, NT is N targets
 # xi/zi is x/z of influences, xt/zt is x/z of target points
-def transformation(xt,zt,xi,zi):
+def transformation(xt,yt,zt,xi,yi,zi):
 # Returns xp1, xp2, zp
 # Others: NT, NI, tx, tz, nx, nz, dummy, x_tile, z_tile, tx_tile, tz_tile
 
     NT = np.size(xt)
     NI = np.size(xi)-1
 
-    (tx,tz,nx,nz) = panel_vectors(xi,zi)[:-1]
+    (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc) = panel_vectors(xi,yi,zi)[:-2]
 
     # Intermediary variables to reduce number of tile/repeat operations
     # From normalvectors: tx==nz, tz==-nx
     x_tile = np.repeat(xt[:,np.newaxis],NI,1) - np.repeat(xi[:-1,np.newaxis].T,NT,0)
+    y_tile = np.repeat(yt[:,np.newaxis],NI,1) - np.repeat(yi[:-1,np.newaxis].T,NT,0)
     z_tile = np.repeat(zt[:,np.newaxis],NI,1) - np.repeat(zi[:-1,np.newaxis].T,NT,0)
     tx_tile = np.repeat(tx[:,np.newaxis].T,NT,0)
+    ty_tile = np.repeat(ty[:,np.newaxis].T,NT,0)
     tz_tile = np.repeat(tz[:,np.newaxis].T,NT,0)
 
     # Transforming left side collocation points from global to local coordinates
@@ -141,38 +151,6 @@ def absoluteToBody(Body, Solid, THETA, HEAVE):
 
     Solid.nodesNew[:,0] = (Solid.nodes[:,0] - Body.AF.x_le) * np.cos(-1*THETA) - (Solid.nodes[:,1] - Body.AF.z_le) * np.sin(-1*THETA)
     Solid.nodesNew[:,1] = (Solid.nodes[:,1] - Body.AF.z_le) * np.cos(-1*THETA) + (Solid.nodes[:,0] - Body.AF.x_le) * np.sin(-1*THETA)
-
-def ramp(t, slope, startTime):
-    """
-    This function can generate a ramp signal based on the following inputs:
-
-    Args:
-        t: array of time samples
-        slope: slope of the ramp signal
-        startTime: location where the ramp turns on
-    """
-    # Get the number of samples in the output signal
-    N = t.size
-
-    # Initialize the ramp signal
-    r = np.zeros(N)
-
-    # Find the index where the ramp turns on
-    if (np.median(np.diff(t)) > 0):
-        startInd = np.min((t>=startTime).nonzero())
-        popInd =np.arange(startInd,N)
-    elif (np.median(np.diff(t)) < 0):
-        # Time-reversed ramp
-        startTime = -1. * startTime
-        startInd = np.max((t>=startTime).nonzero())
-        popInd = np.arange(startInd)
-        slope = -1. * slope
-
-    # For indicies greater than the start time, compute the
-    # proper signal value based on slope
-    r[popInd] = slope * (t[popInd] + startTime) - 2 * startTime * slope
-
-    return (r)
 
 def geom_setup(P, PC, Swimmer, solid=None, FSI=None, PyFEA=None):
     SwiP     = [None for x in xrange(P['N_SWIMMERS'])]

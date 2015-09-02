@@ -187,9 +187,12 @@ def body_wake_plot(Swimmers, SW_PLOT_FIG, i):
 #        ax.set_aspect('equal') This feature has not been implemented in 3D plotting yet
         figure.set_size_inches(16, 9)
         plt.tick_params(labelsize=28)
+        
+        
             
         for Swim in Swimmers:
-            ax.plot_surface(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, rstride=1, cstride=1, cmap=cm.jet, linewidth=0, antialiased=False)
+            c = (Swim.Body.sigma - Swim.Body.sigma.min()) / (Swim.Body.sigma.max() - Swim.Body.sigma.min())
+            ax.plot_surface(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, rstride=1, cstride=1, facecolors=cm.jet(c), linewidth=0, antialiased=False)
             if (i > 1):
                 ax.plot_surface(Swim.Wake.x[1:i], Swim.Wake.y[1:i], Swim.Wake.z[1:i], rstride=1, cstride=1, alpha=0.3)
     

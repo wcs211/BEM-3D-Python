@@ -115,10 +115,10 @@ class Swimmer(object):
             Wake.z[1:,:] = Wake.z[0,:]
 
         else:
-            archive(Wake.x)
-            archive(Wake.y)
-            archive(Wake.z)
-            archive(Wake.mu)
+            archive(Wake.x, axis=0)
+            archive(Wake.y, axis=0)
+            archive(Wake.z, axis=0)
+            archive(Wake.mu, axis=0)
 
             Wake.x[0,:] = Edge.x[-1,:]
             Wake.y[0,:] = Edge.y[-1,:]

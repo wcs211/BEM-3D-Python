@@ -9,9 +9,9 @@ P = PARAMETERS = {
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
   'SW_SAVE_DATA':       False
 , 'SW_SV_L_CYCLE':      True
-, 'SW_SV_FORCES':       True
+, 'SW_SV_FORCES':       False
 , 'SAVE_EVERY':         1
-, 'OUTPUT_DIR':         '/home/wcs211/BEM-3D-Python/data'
+, 'OUTPUT_DIR':         '/home/chris/BEM-3D-Python/data'
 , 'START_FROM':         'zeroTime'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -56,7 +56,7 @@ P = PARAMETERS = {
 , 'NU':             1.004*10**-6            # Fluid kinematic viscosity, m^2/s.
 , 'HEAVE_MAX':      0.31                    # Heave amplitude, m.
 , 'SCw':            0
-, 'SW_KUTTA':       True
+, 'SW_KUTTA':       False
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Skin Friction Solver Constants                                              #
@@ -96,7 +96,6 @@ P = PARAMETERS = {
 , 'SW_VISC_DRAG':       False
 , 'SW_INTERP_MTD':      True
 , 'SW_CNST_THK_BM':     True
-, 'SW_RAMP':            True
 , 'SW_PLOT_FIG':        True
 }
 

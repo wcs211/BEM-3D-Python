@@ -101,18 +101,18 @@ def quilt(Swimmers, influence_type, NT, NI, i):
         for SwimI in Swimmers: # Influencing Swimmer (columns)
             if influence_type == 'Body':
                 (c0, cn) = (SwimI.i_b, SwimI.i_b+SwimI.Body.N) # Insertion column range
-                (xi, zi) = (SwimI.Body.AF.x, SwimI.Body.AF.z) # Coordinates of influences
+                (xi, yi, zi) = (SwimI.Body.AF.x, SwimI.Body.AF.z) # Coordinates of influences
             elif influence_type == 'Edge':
                 (c0, cn) = (SwimI.i_e, SwimI.i_e+SwimI.Edge.N)
-                (xi, zi) = (SwimI.Edge.x, SwimI.Edge.z)
+                (xi, yi, zi) = (SwimI.Edge.x, SwimI.Edge.z)
             elif influence_type == 'Wake':
                 (c0, cn) = (SwimI.i_w, SwimI.i_w+i)
-                (xi, zi) = (SwimI.Wake.x[:i+1], SwimI.Wake.z[:i+1])
+                (xi, yi, zi) = (SwimI.Wake.x[:i+1], SwimI.Wake.z[:i+1])
             else:
                 print 'ERROR! Invalid influence type.'
 
             (xp1[r0:rn, c0:cn], xp2[r0:rn, c0:cn], zp[r0:rn, c0:cn]) = \
-                transformation(SwimT.Body.AF.x_col, SwimT.Body.AF.z_col, xi, zi)
+                transformation(SwimT.Body.AF.x_col, SwimT.Body.AF.y_col, SwimT.Body.AF.z_col, xi, yi, zi)
 
     return(xp1, xp2, zp)
 
@@ -200,14 +200,15 @@ def solve_phi(Swimmers, RHO, DEL_T, i, outerCorr):
             for SwimI in Swimmers:
                 a_e[:,SwimI.i_b] = -b_e[:, SwimI.i_e]
                 a_e[:,SwimI.i_b+SwimI.Body.N-1] = b_e[:, SwimI.i_e]
-            a_inv = np.linalg.inv(a_b + a_e)
+            a = a_b + a_e
+
             # Get right-hand side
             if i == 0:
                 b = -np.dot(b_b, sigma_all)
             else:
                 b = -np.dot(b_b, sigma_all) - np.dot(b_w, mu_w_all)
             # Solve for bodies' doublet strengths using explicit Kutta
-            mu_b_all = np.dot(a_inv, b)
+            mu_b_all = np.linalg.solve(a, b)
             # First mu_guess (from explicit Kutta)
             for Swim in Swimmers:
                 Swim.mu_guess = np.empty(2) # [0] is current guess, [1] is previous
@@ -218,7 +219,7 @@ def solve_phi(Swimmers, RHO, DEL_T, i, outerCorr):
         else:
             if n_iter == 2: # Make a second initial guess
                 # Update phi_dinv so it no longer includes explicit Kutta condition
-                a_inv = np.linalg.inv(a_b)
+                a = a_b
 
                 Swimmers[0].mu_guess[1] = Swimmers[0].mu_guess[0]
                 Swimmers[0].delta_cp[1] = Swimmers[0].delta_cp[0]
@@ -237,7 +238,7 @@ def solve_phi(Swimmers, RHO, DEL_T, i, outerCorr):
             else:
                 rhs = -np.dot(b_b, sigma_all) - np.dot(np.insert(b_w, 0, b_e[:,0], axis=1), np.insert(Swimmers[0].Wake.mu[:i], 0, Swimmers[0].mu_guess[0]))
 
-            Swimmers[0].Body.mu = np.dot(a_inv, rhs)
+            Swimmers[0].Body.mu = np.linalg.solve(a, rhs)
 
         for Swim in Swimmers:
             Swim.Body.pressure(RHO, DEL_T, i)

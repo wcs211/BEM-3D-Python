@@ -119,9 +119,6 @@ class BodyBFC(object):
         self.y_mid = y_mid
         self.z_mid = z_mid
         
-#==============================================================================
-# # Make sure about that part.
-#==============================================================================
 class BodyAFC(object):
     """A collection of absolute-frame coordinates for a Body object.
     
@@ -133,20 +130,22 @@ class BodyAFC(object):
         x_neut, y_neut, z_neut: Point arrays along the body's neutral axis.
         x_le, y_le, z_le: Position of the body's leading edge point.
     """
-    def __init__(self, N):
-        self.N = N
-        self.x = np.empty(N+1)
-        self.y = np.empty(N+1)
-        self.z = np.empty(N+1)
-        self.x_col = np.empty(N)
-        self.y_col = np.empty(N)
-        self.z_col = np.empty(N)
-        self.x_mid = np.zeros((3,N))
-        self.y_mid = np.zeros((3,N))
-        self.z_mid = np.zeros((3,N))
-        self.x_neut = np.empty(N)
-        self.y_neut = np.empty(N)
-        self.z_neut = np.empty(N)
+    def __init__(self, N_CHORD, N_SPAN):
+        self.N_CHORD = N_CHORD
+        self.N_SPAN = N_SPAN
+        self.N = 4. * N_CHORD * N_SPAN
+        self.x = np.empty((2 * N_CHORD - 1, N_SPAN))
+        self.y = np.empty((2 * N_CHORD - 1, N_SPAN))
+        self.z = np.empty((2 * N_CHORD - 1, N_SPAN))
+        self.x_col = np.empty((2 * N_CHORD - 2, N_SPAN - 1))
+        self.y_col = np.empty((2 * N_CHORD - 2, N_SPAN - 1))
+        self.z_col = np.empty((2 * N_CHORD - 2, N_SPAN - 1))
+        self.x_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1, 3))
+        self.y_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1, 3))
+        self.z_mid = np.zeros((2 * N_CHORD - 2, N_SPAN - 1, 3))
+        self.x_neut = np.empty((2 * N_CHORD - 1, N_SPAN))
+        self.y_neut = np.empty((2 * N_CHORD - 1, N_SPAN))
+        self.z_neut = np.empty((2 * N_CHORD - 1, N_SPAN))
         self.x_le = 0.
         self.y_le = 0.
         self.z_le = 0.

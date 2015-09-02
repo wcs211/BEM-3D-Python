@@ -77,24 +77,25 @@ class Body(object):
         self.BF = BodyFrameCoordinates
         # Initialize absolute-frame panel coordinates:
         # x, z, x_col, z_col, x_mid, z_mid, x_neut, z_neut
-        self.AF = PC.BodyAFC(self.N)
+        self.AF = PC.BodyAFC(self.N_CHORD, self.N_SPAN)
         # Prescribed motion
         self.MP = MotionParameters
         self.V0 = MotionParameters.V0
 
-        self.vx = np.zeros(self.N)
-        self.vz = np.zeros(self.N)
+        self.vx = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.vy = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.vz = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
 
-        self.sigma = np.zeros(self.N)
-        self.phi_s = np.zeros((self.N,self.N))
-        self.phi_db = np.zeros((self.N,self.N))
-        self.phi_dw = np.zeros(self.N)
-        self.mu = np.zeros(self.N)
-        self.gamma = np.zeros(self.N+1)
+        self.sigma = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.phi_s = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.phi_db = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.phi_dw = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.mu = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.gamma = np.zeros((2 * N_CHORD - 1, N_SPAN))
 
-        self.p = np.zeros(self.N)
-        self.cp = np.zeros(self.N)
-        self.mu_past = np.zeros((2,self.N))
+        self.p = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.cp = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1))
+        self.mu_past = np.zeros((2 * self.N_CHORD - 2, self.N_SPAN - 1, 3))
         
         self.Cf = 0.
         self.Cl = 0.
@@ -145,7 +146,7 @@ class Body(object):
         
         # Stepping through each spanwise position to calculate the positions of
         # the fluke neutral plane at the given time step.
-        for i in range(N_SPAN):   
+        for i in xrange(N_SPAN):   
                    
             A[:,i] = C[i]*((1+EPSILON)**(K-1))*(2**(-K))
             THETA = np.linspace(0,np.pi,N_SPAN)
@@ -170,10 +171,10 @@ class Body(object):
             x[:,i] = np.hstack((x_body[:,i] , x_body[-2::-1,i]))
             z[:,i] = np.hstack((z_bot[:,i] , z_top[-2::-1,i]))
             
-        for i in range(2*N_CHORD-1):
+        for i in xrange(2*N_CHORD-1):
             y[i,:] = np.linspace(0.,SPAN,N_SPAN)
         
-        for i in range(N_SPAN-2):
+        for i in xrange(N_SPAN-2):
             x_mid[:,i] = ((x[1:,i] + x[:-1,i])/2)
             y_mid[:,i] = ((y[1:,i] + y[:-1,i])/2)
             z_mid[:,i] = ((z[1:,i] + z[:-1,i])/2)
@@ -214,7 +215,7 @@ class Body(object):
         oLE = np.zeros(N_SPAN)
         oTE = np.zeros(N_SPAN)
         
-        for i in range(N_SPAN):
+        for i in xrange(N_SPAN):
             # Create bottom x-corrdinates
             start = 0.
             stop  = np.pi
@@ -282,11 +283,11 @@ class Body(object):
             x[:,i] += LE[i]
         
         # Create top y-corrdinates   
-        for i in range(2 * N_CHORD - 1):
+        for i in xrange(2 * N_CHORD - 1):
             y[i,:] = np.linspace(0., SPAN, N_SPAN)
          
         # Define panel mid-points   
-        for i in range(N_SPAN - 2):
+        for i in xrange(N_SPAN - 2):
             x_mid[:,i] = 0.25 * (x[1:,i] + x[:-1,i] + x[1:,i+1] + x[:-1,i+1])
             y_mid[:,i] = 0.25 * (y[1:,i] + y[:-1,i] + y[1:,i+1] + y[:-1,i+1])
             z_mid[:,i] = 0.25 * (z[1:,i] + z[:-1,i] + z[1:,i+1] + z[:-1,i+1])   
@@ -327,7 +328,7 @@ class Body(object):
         
         # Stepping through each spanwise position to calculate the positions of
         # the fluke neutral plane at the given time step.
-        for i in range(N_SPAN):   
+        for i in xrange(N_SPAN):   
                    
             xb[:,i] = np.linspace(np.pi,0.,N_CHORD)
             xt[:,i] = np.linspace(0.,np.pi,N_CHORD)
@@ -364,10 +365,10 @@ class Body(object):
             x[:,i] = np.hstack((xb[:,i] , xt[1:,i]))
             z[:,i] = np.hstack((zb[:,i] , zt[1:,i]))
             
-        for i in range(2*N_CHORD-1):
+        for i in xrange(2*N_CHORD-1):
             y[i,:] = np.linspace(0.,SPAN,N_SPAN)
         
-        for i in range(N_SPAN-2):
+        for i in xrange(N_SPAN-2):
             x_mid[:,i] = ((x[1:,i] + x[:-1,i])/2)
             y_mid[:,i] = ((y[1:,i] + y[:-1,i])/2)
             z_mid[:,i] = ((z[1:,i] + z[:-1,i])/2)
@@ -459,9 +460,9 @@ class Body(object):
         self.AF.x_col = afx_col
         self.AF.y_col = afy_col
         self.AF.z_col = afz_col
-        self.AF.x_mid = x_mid
-        self.AF.y_mid = y_mid
-        self.AF.z_mid = z_mid
+        self.AF.x_mid[:,:,0] = x_mid
+        self.AF.y_mid[:,:,0] = y_mid
+        self.AF.z_mid[:,:,0] = z_mid
         self.AF.x_neut = x_neut
         self.AF.y_neut = y_neut
         self.AF.z_neut = z_neut
@@ -501,9 +502,10 @@ class Body(object):
             THETA_MINUS: Pitching angle minus a small time difference (TSTEP)
             THETA_PLUS: Pitching angle plus a small time difference (TSTEP)
         """
+        Nc = self.BF.x_mid.shape[0]
+        Ns = self.BF.x_mid.shape[1]        
+        
         if i == 0:
-            Nc = self.BF.x.shape[0]-1
-            Ns = self.BF.x.shape[1]-1
             x_col = self.BF.x_mid
             y_col = self.BF.y_mid
             z_col = self.BF.z_mid
@@ -543,19 +545,19 @@ class Body(object):
 
         elif i == 1:
             # First-order backwards differencing of body collocation point positions
-            self.vx = (self.AF.x_mid[0,:]-self.AF.x_mid[1,:])/DEL_T - self.V0
-            self.vy = (self.AF.y_mid[0,:]-self.AF.y_mid[1,:])/DEL_T
-            self.vz = (self.AF.z_mid[0,:]-self.AF.z_mid[1,:])/DEL_T
+            self.vx = (self.AF.x_mid[:,:,0]-self.AF.x_mid[:,:,1])/DEL_T - self.V0
+            self.vy = (self.AF.y_mid[:,:,0]-self.AF.y_mid[:,:,1])/DEL_T
+            self.vz = (self.AF.z_mid[:,:,0]-self.AF.z_mid[:,:,1])/DEL_T
 
         else:
             # Second-order backwards differencing of body collocation point positions
-            self.vx = (3*self.AF.x_mid[0,:]-4*self.AF.x_mid[1,:]+self.AF.x_mid[2,:])/(2*DEL_T) - self.V0
-            self.vy = (3*self.AF.y_mid[0,:]-4*self.AF.y_mid[1,:]+self.AF.y_mid[2,:])/(2*DEL_T)
-            self.vz = (3*self.AF.z_mid[0,:]-4*self.AF.z_mid[1,:]+self.AF.z_mid[2,:])/(2*DEL_T)
+            self.vx = (3*self.AF.x_mid[:,:,0]-4*self.AF.x_mid[:,:,1]+self.AF.x_mid[:,:,2])/(2*DEL_T) - self.V0
+            self.vy = (3*self.AF.y_mid[:,:,0]-4*self.AF.y_mid[:,:,1]+self.AF.y_mid[:,:,2])/(2*DEL_T)
+            self.vz = (3*self.AF.z_mid[:,:,0]-4*self.AF.z_mid[:,:,1]+self.AF.z_mid[:,:,2])/(2*DEL_T)
 
 #        # Body source strengths with normal vector pointing outward (overall sigma pointing outward)
-#        (nx,nz) = panel_vectors(self.AF.x,self.AF.z)[2:4]
-#        self.sigma = nx*(self.V0 + self.vx) + nz*self.vz
+        (nx, ny, nz) = panel_vectors(self.AF.x, self.AF.y, self.AF.z, Ns+1, Nc+1)[0:3]
+        self.sigma = nx*(self.V0 + self.vx) + ny*self.vy + nz*self.vz
 
     def pressure(self, RHO, DEL_T, i):
         """Calculates the pressure distribution along the body's surface.
