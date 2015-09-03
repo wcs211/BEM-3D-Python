@@ -7,7 +7,11 @@ import numpy as np
 # Ns is the numper of panels in spanwise direction
 # Nc is the number of panels in chordwise direction
 # TODO: panel_vectors now need a second tangential vector and area of panel
-def panel_vectors(x,y,z,Ns,Nc):
+def panel_vectors(x,y,z):
+    
+    Nc = x.shape[0]
+    Ns = x.shape[1]    
+    
     # Calculating the normal unit vector
     # diagonal vectors associated to each panel
     diag1 = (x[1:,:-1]-x[:-1,1:],y[:-1,1:]-y[1:,:-1],z[1:,:-1]-z[:-1,1:])
@@ -68,15 +72,13 @@ def point_vectors(Nc, Ns, v1,v2,v3,v4):
     vn_z = np.zeros((Nc,Ns))
 
     for i in xrange(Ns):
-        for j in xrange(Nc):
-        
+        for j in xrange(Nc):       
             v_n = np.cross(vx[:,j,i],vy[:,j,i])
             #full lengths of each normal vector component
             vn_x[j,i] = v_n[0]
             vn_y[j,i] = v_n[1]
             vn_z[j,i] = v_n[2]
-   
-   
+     
     vn_x_unit = vn_x/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
     vn_y_unit = vn_y/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)
     vn_z_unit = vn_z/np.sqrt(vn_x**2 + vn_y**2 + vn_z**2)    
@@ -115,30 +117,56 @@ def archive(array, axis=3):
 # NI is N influences, NT is N targets
 # xi/zi is x/z of influences, xt/zt is x/z of target points
 def transformation(xt,yt,zt,xi,yi,zi):
-# Returns xp1, xp2, zp
-# Others: NT, NI, tx, tz, nx, nz, dummy, x_tile, z_tile, tx_tile, tz_tile
+    """
+    This code transforms the N points (Xb, Yb, Zb)' from a global coordinate 
+    system into K coordinate systems defined by the unit vectors 
+    vc, vt, and vn and their origins cpts.
+    
+    Xb = R^(1 X N)
+    Yb = R^(1 X N)
+    Zb = R^(1 X N)
+    
+    cpts = R^(3 X K)
+    vc = R^(3 X K)
+    vt = R^(3 X K)
+    vn = R^(3 X K)
+    
+    The output Xp is Xp = R^(3*K X N) matrix.  The transformed coordinate
+    points are assembled in the following way:
+    
+               Xp = [x11 x12 ... x1N]
+                    [y11 y12 ... y1N]
+                    [z11 z12 ... z1N]
+                    [x21 x22 ... x2N]
+                    [y21 y22 ... y2N]
+                    [z21 z22 ... z2N]
+                    [x21 x22 ... x2N]
+                    [ .   .  ...  . ]
+                    [ .   .  ...  . ]
+                    [ .   .  ...  . ]
+                    [xK1 xK2 ... xKN]
+                    [yK1 yK2 ... yKN]
+                    [zK1 zK2 ... zKN]
+    """
+    
+    (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc) = panel_vectors(xi, yi, zi)[:-2]
 
-    NT = np.size(xt)
-    NI = np.size(xi)-1
+    Xb = np.reshape(xi,(1, xi.size))
+    Yb = np.reshape(yi,(1, yi.size))
+    Zb = np.reshape(zi,(1, zi.size))
 
-    (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc) = panel_vectors(xi,yi,zi)[:-2]
-
-    # Intermediary variables to reduce number of tile/repeat operations
-    # From normalvectors: tx==nz, tz==-nx
-    x_tile = np.repeat(xt[:,np.newaxis],NI,1) - np.repeat(xi[:-1,np.newaxis].T,NT,0)
-    y_tile = np.repeat(yt[:,np.newaxis],NI,1) - np.repeat(yi[:-1,np.newaxis].T,NT,0)
-    z_tile = np.repeat(zt[:,np.newaxis],NI,1) - np.repeat(zi[:-1,np.newaxis].T,NT,0)
-    tx_tile = np.repeat(tx[:,np.newaxis].T,NT,0)
-    ty_tile = np.repeat(ty[:,np.newaxis].T,NT,0)
-    tz_tile = np.repeat(tz[:,np.newaxis].T,NT,0)
-
-    # Transforming left side collocation points from global to local coordinates
-    xp1 = x_tile*tx_tile + z_tile*tz_tile
-    zp = x_tile*(-tz_tile) + z_tile*tx_tile
-
-    # Transforming right side panel points into local coordinate system
-    dummy = (xi[1:]-xi[:-1])*tx + (zi[1:]-zi[:-1])*tz
-    xp2 = xp1 - np.repeat(dummy[:,np.newaxis].T,NT,0)
+    K = cpts.shape[1]
+    N = Xb.shape[1]
+     
+    i = reshape(repmat(1:3*K,3,1),9*K,1);
+    j = reshape(repmat(reshape((1:3*K)',3,K),3,1),9*K,1);
+    v = [vc;vt;vn];
+    
+    v = reshape(v,9*K,1);
+    
+    Qt = sparse(i,j,v,3*K,3*K);
+    
+    Xp = Qt*(repmat([Xb;Yb;Zb],K,1) - repmat(reshape(cpts,3*K,1),1,N));
 
     return(xp1,xp2,zp)
 

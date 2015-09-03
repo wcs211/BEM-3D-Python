@@ -450,9 +450,9 @@ class Body(object):
         # They should be shifted inside or outside of the boundary depending on the dirichlet or neumann condition
         # Shifting surface collocation points some percent of the height from the neutral axis
         # Normal vectors point outward but positive S is inward, so the shift must be subtracted from the panel midpoints
-        afx_col = x_mid - self.S*panel_vectors(bfx, bfy, bfz, Ns, Nc)[0]*np.absolute(bfz_col)
-        afy_col = y_mid - self.S*panel_vectors(bfy, bfy, bfz, Ns, Nc)[1]*np.absolute(bfz_col)
-        afz_col = z_mid - self.S*panel_vectors(bfz, bfy, bfz, Ns, Nc)[2]*np.absolute(bfz_col)
+        afx_col = x_mid - self.S*panel_vectors(bfx, bfy, bfz)[0]*np.absolute(bfz_col)
+        afy_col = y_mid - self.S*panel_vectors(bfy, bfy, bfz)[1]*np.absolute(bfz_col)
+        afz_col = z_mid - self.S*panel_vectors(bfz, bfy, bfz)[2]*np.absolute(bfz_col)
 
         self.AF.x = afx
         self.AF.y = afy
@@ -556,7 +556,7 @@ class Body(object):
             self.vz = (3*self.AF.z_mid[:,:,0]-4*self.AF.z_mid[:,:,1]+self.AF.z_mid[:,:,2])/(2*DEL_T)
 
 #        # Body source strengths with normal vector pointing outward (overall sigma pointing outward)
-        (nx, ny, nz) = panel_vectors(self.AF.x, self.AF.y, self.AF.z, Ns+1, Nc+1)[0:3]
+        (nx, ny, nz) = panel_vectors(self.AF.x, self.AF.y, self.AF.z)[0:3]
         self.sigma = nx*(self.V0 + self.vx) + ny*self.vy + nz*self.vz
 
     def pressure(self, RHO, DEL_T, i):

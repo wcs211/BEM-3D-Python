@@ -142,18 +142,16 @@ def body_plot(Swimmers, SW_PLOT_FIG):
         plt.tick_params(labelsize=28)
             
         for Swim in Swimmers:
-            Nc = Swim.Body.BF.x.shape[0]
-            Ns = Swim.Body.BF.x.shape[1]
-            (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc, lps, lpc) = panel_vectors(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, Ns, Nc)
-            x = Swim.Body.AF.x_mid[::5,::5] + 0.1 * nx[::5,::5]
-            y = Swim.Body.AF.y_mid[::5,::5] + 0.1 * ny[::5,::5]
-            z = Swim.Body.AF.z_mid[::5,::5] + 0.1 * nz[::5,::5]
+            (nx, ny, nz, txs, tys, tzs, txc, tyc, tzc, lps, lpc) = panel_vectors(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z)
+            x = Swim.Body.AF.x_mid[::5,::5,0] + 0.1 * nx[::5,::5]
+            y = Swim.Body.AF.y_mid[::5,::5,0] + 0.1 * ny[::5,::5]
+            z = Swim.Body.AF.z_mid[::5,::5,0] + 0.1 * nz[::5,::5]
             nx = nx[::5,::5]
             ny = ny[::5,::5]
             nz = nz[::5,::5]
             ax.quiver(x, y, z, nx, ny, nz, length=0.1, color='r')
-            ax.quiver(Swim.Body.AF.x_mid[::5,::5], Swim.Body.AF.y_mid[::5,::5], Swim.Body.AF.z_mid[::5,::5], txs[::5,::5], tys[::5,::5], tzs[::5,::5], length=0.1, color='g')
-            ax.quiver(Swim.Body.AF.x_mid[::5,::5], Swim.Body.AF.y_mid[::5,::5], Swim.Body.AF.z_mid[::5,::5], txc[::5,::5], tyc[::5,::5], tzc[::5,::5], length=0.1, color='b')
+            ax.quiver(Swim.Body.AF.x_mid[::5,::5,0], Swim.Body.AF.y_mid[::5,::5,0], Swim.Body.AF.z_mid[::5,::5,0], txs[::5,::5], tys[::5,::5], tzs[::5,::5], length=0.1, color='g')
+            ax.quiver(Swim.Body.AF.x_mid[::5,::5,0], Swim.Body.AF.y_mid[::5,::5,0], Swim.Body.AF.z_mid[::5,::5,0], txc[::5,::5], tyc[::5,::5], tzc[::5,::5], length=0.1, color='b')
             ax.plot_surface(Swim.Body.AF.x, Swim.Body.AF.y, Swim.Body.AF.z, rstride=1, cstride=1, linewidth=0, color='k', antialiased=True)
     
         # Determine if the output directory exists. If not, create the directory.
